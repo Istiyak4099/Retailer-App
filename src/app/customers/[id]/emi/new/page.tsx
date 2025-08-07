@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { CheckCircle } from "lucide-react";
 
@@ -108,7 +108,7 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
                         <Input type="number" placeholder="0.00" {...field} />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
+                    </MormItem>
                   )}
                 />
               </div>
