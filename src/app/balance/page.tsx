@@ -5,7 +5,7 @@ import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { QrCode, MinusCircle, PlusCircle } from "lucide-react";
+import { QrCode, MinusCircle, PlusCircle, CreditCard } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const availableCodes = [
