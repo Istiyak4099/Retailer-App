@@ -1,22 +1,21 @@
-import { LoginForm } from '@/components/auth/login-form';
+"use client";
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/dashboard');
+  }, [router]);
+
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-primary h-12 w-12 mb-4"><path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l10-10A1 1 0 0 0 22 11l-10-9Z"/><path d="M7 7h.01"/></svg>
-          <h1 className="font-headline text-3xl font-bold tracking-tight text-primary sm:text-4xl">
-            Defence BD
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            The simplest way to manage your devices.
-          </p>
-        </div>
-        <LoginForm />
-        <p className="text-center text-xs text-muted-foreground">
-          © 2024 Defence BD. All rights reserved.
-        </p>
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Redirecting to dashboard...</p>
       </div>
     </div>
   );
