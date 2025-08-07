@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'Retailer EMI Assist',
+  title: 'Defence BD',
   description: 'Modern, responsive Retailer EMI Management mobile app',
 };
 
