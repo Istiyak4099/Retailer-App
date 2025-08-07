@@ -2,11 +2,14 @@
 
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
-  CalendarDays,
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
+import {
   KeyRound,
-  Smartphone,
   UserPlus,
   QrCode,
   Users,
@@ -15,13 +18,17 @@ import {
   Youtube,
   Share2,
   Headset,
+  Hourglass,
+  Lock,
+  Unlock,
+  Trash2,
 } from "lucide-react";
 import Link from 'next/link';
 
-const StatCard = ({ icon: Icon, title, value }: { icon: React.ElementType, title: string, value: string | number }) => (
-    <Card className="text-center shadow-md">
+const StatCard = ({ icon: Icon, title, value, iconColor }: { icon: React.ElementType, title: string, value: string | number, iconColor?: string }) => (
+    <Card className="text-center shadow-md flex-shrink-0 w-[140px]">
         <CardContent className="p-4">
-            <Icon className="mx-auto h-8 w-8 text-primary mb-2" />
+            <Icon className={cn("mx-auto h-8 w-8 text-primary mb-2", iconColor)} />
             <p className="text-2xl font-bold">{value}</p>
             <p className="text-xs text-muted-foreground">{title}</p>
         </CardContent>
@@ -47,12 +54,31 @@ const ListItem = ({ icon: Icon, title, value, href }: { icon: React.ElementType,
 export default function DashboardPage() {
   return (
     <div className="space-y-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard icon={CalendarDays} title="Today's Activation" value={3} />
-            <StatCard icon={KeyRound} title="Balance Key" value={0} />
-            <StatCard icon={Smartphone} title="Active Devices" value={3} />
-            <StatCard icon={CalendarDays} title="Pending" value={0} />
-        </div>
+        <Carousel
+          opts={{
+            align: "start",
+            dragFree: true,
+          }}
+          className="w-full"
+        >
+          <CarouselContent>
+            <CarouselItem className="basis-auto">
+              <StatCard icon={Hourglass} title="Pending Devices" value={0} iconColor="text-orange-500" />
+            </CarouselItem>
+            <CarouselItem className="basis-auto">
+              <StatCard icon={Lock} title="Locked Devices" value={0} iconColor="text-red-500" />
+            </CarouselItem>
+            <CarouselItem className="basis-auto">
+              <StatCard icon={Unlock} title="Unlocked Devices" value={0} iconColor="text-green-500" />
+            </CarouselItem>
+            <CarouselItem className="basis-auto">
+               <StatCard icon={Trash2} title="Removed Devices" value={0} />
+            </CarouselItem>
+             <CarouselItem className="basis-auto">
+               <StatCard icon={Users} title="Active Devices" value={3} />
+            </CarouselItem>
+          </CarouselContent>
+        </Carousel>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link href="/customers/new" passHref>
@@ -80,3 +106,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
