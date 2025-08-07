@@ -108,7 +108,7 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
                         <Input type="number" placeholder="0.00" {...field} />
                       </FormControl>
                       <FormMessage />
-                    </MormItem>
+                    </FormItem>
                   )}
                 />
               </div>
