@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -40,6 +41,10 @@ export function CustomerTable({ customers }: CustomerTableProps) {
         return "secondary";
     }
   };
+  
+  const handleRowClick = (customerId: string) => {
+    router.push(`/customers/${customerId}`);
+  };
 
   return (
     <Table>
@@ -55,7 +60,7 @@ export function CustomerTable({ customers }: CustomerTableProps) {
       </TableHeader>
       <TableBody>
         {customers.map((customer) => (
-          <TableRow key={customer.id}>
+          <TableRow key={customer.id} onClick={() => handleRowClick(customer.id)} className="cursor-pointer">
             <TableCell>
               <div className="font-medium">{customer.full_name}</div>
               <div className="text-sm text-muted-foreground">
@@ -73,18 +78,19 @@ export function CustomerTable({ customers }: CustomerTableProps) {
             <TableCell>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button aria-haspopup="true" size="icon" variant="ghost">
+                  <Button aria-haspopup="true" size="icon" variant="ghost" onClick={(e) => e.stopPropagation()}>
                     <MoreHorizontal className="h-4 w-4" />
                     <span className="sr-only">Toggle menu</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuItem>View Details</DropdownMenuItem>
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleRowClick(customer.id); }}>View Details</DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() =>
-                      router.push(`/customers/${customer.id}/emi/new`)
-                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/customers/${customer.id}/emi/new`);
+                    }}
                   >
                     Add EMI
                   </DropdownMenuItem>
