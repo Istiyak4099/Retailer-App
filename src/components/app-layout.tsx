@@ -12,11 +12,10 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarTrigger,
+  SidebarInset,
 } from "@/components/ui/sidebar";
 import {
   Home,
-  UserPlus,
-  QrCode,
   CreditCard,
   LogOut,
   User,
@@ -51,25 +50,6 @@ export function AppLayout({
   return (
     <SidebarProvider>
       <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-primary px-4 text-primary-foreground sm:px-6">
-            <div className="flex items-center gap-2">
-                <SidebarTrigger className="md:hidden text-primary-foreground hover:text-primary-foreground hover:bg-primary/80" />
-                <h1 className="text-xl font-bold md:text-2xl">
-                    {title}
-                </h1>
-            </div>
-            <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="rounded-full text-primary-foreground hover:text-primary-foreground hover:bg-primary/80">
-                    <Bell className="h-5 w-5" />
-                    <span className="sr-only">Notifications</span>
-                </Button>
-                <Button variant="ghost" size="icon" className="rounded-full text-primary-foreground hover:text-primary-foreground hover:bg-primary/80" onClick={() => router.push('/')}>
-                    <LogOut className="h-5 w-5" />
-                    <span className="sr-only">Logout</span>
-                </Button>
-            </div>
-        </header>
-
         <Sidebar>
           <SidebarContent className="p-4">
             <SidebarMenu>
@@ -90,10 +70,29 @@ export function AppLayout({
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
-        
-        <div className="p-4 sm:px-6 sm:py-4">
-            {children}
-        </div>
+        <SidebarInset>
+            <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-primary px-4 text-primary-foreground sm:px-6">
+                <div className="flex items-center gap-2">
+                    <SidebarTrigger className="md:hidden text-primary-foreground hover:text-primary-foreground hover:bg-primary/80" />
+                    <h1 className="text-xl font-bold md:text-2xl">
+                        {title}
+                    </h1>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="rounded-full text-primary-foreground hover:text-primary-foreground hover:bg-primary/80">
+                        <Bell className="h-5 w-5" />
+                        <span className="sr-only">Notifications</span>
+                    </Button>
+                    <Button variant="ghost" size="icon" className="rounded-full text-primary-foreground hover:text-primary-foreground hover:bg-primary/80" onClick={() => router.push('/')}>
+                        <LogOut className="h-5 w-5" />
+                        <span className="sr-only">Logout</span>
+                    </Button>
+                </div>
+            </header>
+            <div className="p-4 sm:px-6 sm:py-4">
+                {children}
+            </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );
