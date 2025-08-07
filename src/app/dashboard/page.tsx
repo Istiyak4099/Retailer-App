@@ -24,6 +24,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from 'next/link';
+import { cn } from "@/lib/utils";
 
 const StatCard = ({ icon: Icon, title, value, iconColor }: { icon: React.ElementType, title: string, value: string | number, iconColor?: string }) => (
     <Card className="text-center shadow-md flex-shrink-0 w-[140px]">
@@ -106,5 +107,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
