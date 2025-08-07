@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppLayout } from "@/components/app-layout";
@@ -24,7 +23,7 @@ import {
   User,
 } from "lucide-react";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const InfoRow = ({ label, value }: { label: string; value: string | number | undefined }) => (
@@ -38,13 +37,12 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
   <h3 className="text-lg font-semibold mt-4 mb-2">{children}</h3>
 );
 
-export default function CustomerDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function CustomerDetailPage() {
+  const params = useParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  
   const customer: Customer | undefined = mockCustomers.find(
-    (c) => c.id === params.id
+    (c) => c.id === id
   );
 
   if (!customer) {
