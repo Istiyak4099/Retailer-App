@@ -49,7 +49,6 @@ export function AppLayout({
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-background">
         <Sidebar>
           <SidebarContent className="p-4">
             <SidebarMenu>
@@ -73,7 +72,7 @@ export function AppLayout({
         <SidebarInset>
             <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-primary px-4 text-primary-foreground sm:px-6">
                 <div className="flex items-center gap-2">
-                    <SidebarTrigger className="md:hidden text-primary-foreground hover:text-primary-foreground hover:bg-primary/80" />
+                    <SidebarTrigger className="text-primary-foreground hover:text-primary-foreground hover:bg-primary/80" />
                     <h1 className="text-xl font-bold md:text-2xl">
                         {title}
                     </h1>
@@ -93,7 +92,6 @@ export function AppLayout({
                 {children}
             </div>
         </SidebarInset>
-      </div>
     </SidebarProvider>
   );
 }
