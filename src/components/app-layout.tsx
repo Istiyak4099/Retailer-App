@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -120,26 +121,27 @@ export function AppLayout({
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <Link href={item.href} legacyBehavior passHref>
-                    <SidebarMenuButton
-                      isActive={pathname === item.href}
-                      tooltip={{ children: item.label, side: "right" }}
-                    >
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.href}
+                    tooltip={{ children: item.label, side: "right" }}
+                  >
+                    <Link href={item.href}>
                       <item.icon />
                       <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </Link>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="p-4">
-            <Link href="/onboarding" legacyBehavior passHref>
-              <SidebarMenuButton tooltip={{ children: 'Profile', side: 'right' }}>
+            <SidebarMenuButton tooltip={{ children: 'Profile', side: 'right' }} asChild>
+              <Link href="/onboarding">
                 <User />
                 <span>Profile</span>
-              </SidebarMenuButton>
-            </Link>
+              </Link>
+            </SidebarMenuButton>
           </SidebarFooter>
         </Sidebar>
 
