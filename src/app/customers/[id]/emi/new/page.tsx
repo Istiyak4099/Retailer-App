@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
@@ -42,9 +42,11 @@ const formSchema = z.object({
   live_photo: fileSchema.refine(files => files?.length === 1, "Live Photo is required."),
 });
 
-export default function NewEmiPage({ params }: { params: { id: string } }) {
+export default function NewEmiPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const params = useParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const [nidFrontPreview, setNidFrontPreview] = useState<string | null>(null);
   const [nidBackPreview, setNidBackPreview] = useState<string | null>(null);
   const [livePhotoPreview, setLivePhotoPreview] = useState<string | null>(null);
@@ -86,7 +88,7 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
       const total_emi = values.price - values.down_payment + values.processing_fee;
 
       await addDoc(collection(db, "EmiDetails"), {
-        customerId: params.id,
+        customerId: id,
         product_name: values.product_name,
         price: values.price,
         processing_fee: values.processing_fee,
@@ -100,7 +102,7 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
         created_time: serverTimestamp(),
       });
       
-      const customerDocRef = doc(db, "Customers", params.id);
+      const customerDocRef = doc(db, "Customers", id);
       await updateDoc(customerDocRef, {
         status: "Active"
       });
@@ -109,7 +111,7 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
         title: "EMI Created Successfully",
         description: "The new EMI plan has been saved.",
       });
-      router.push(`/customers/${params.id}`);
+      router.push(`/customers/${id}`);
     } catch (error) {
         console.error("Error creating EMI:", error);
         toast({ variant: "destructive", title: "Error", description: "Failed to create EMI plan." });
@@ -295,5 +297,3 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
     </AppLayout>
   );
 }
-
-    
