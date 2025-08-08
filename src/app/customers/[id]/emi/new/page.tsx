@@ -57,6 +57,7 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
       processing_fee: 0,
       down_payment: 0,
       number_of_emi: 6,
+      emi_monthly_amount: 0,
     },
   });
 
