@@ -31,6 +31,17 @@ import { db } from "@/lib/firebase";
 import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const InfoRow = ({ label, value }: { label: string; value: string | number | undefined | null }) => (
   <div className="flex justify-between py-2">
@@ -63,7 +74,8 @@ export default function CustomerDetailPage() {
         const customerDoc = await getDoc(customerDocRef);
 
         if (customerDoc.exists()) {
-          setCustomer({ id: customerDoc.id, ...customerDoc.data() } as Customer);
+          const customerData = { id: customerDoc.id, ...customerDoc.data() } as Customer;
+          setCustomer(customerData);
 
           const q = query(collection(db, "EmiDetails"), where("customerId", "==", id));
           const emiQuerySnapshot = await getDocs(q);
@@ -96,10 +108,17 @@ export default function CustomerDetailPage() {
         const customerDocRef = doc(db, "Customers", customer.id);
         await updateDoc(customerDocRef, { status: newStatus });
         setCustomer(prev => prev ? { ...prev, status: newStatus } : null);
+        
+        let toastMessage = `Customer status changed to ${newStatus}.`;
+        if (newStatus === 'Locked') toastMessage = 'Device locked successfully.';
+        else if (newStatus === 'Unlocked') toastMessage = 'Device unlocked successfully.';
+        else if (newStatus === 'Removed') toastMessage = 'Customer removed successfully.';
+
         toast({
             title: "Status Updated",
-            description: `Customer status changed to ${newStatus}.`,
+            description: toastMessage,
         });
+
         if (newStatus === "Removed") {
             router.push('/customers/list?status=Removed');
         }
@@ -154,6 +173,29 @@ export default function CustomerDetailPage() {
       .map((n) => n[0])
       .join("");
   };
+  
+  const ActionButton = ({ status, title, description, buttonText, variant, icon: Icon, className }: { status: Customer['status'], title: string, description: string, buttonText: string, variant: Button['variant'], icon: React.ElementType, className?: string }) => (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant={variant} className={className} disabled={isUpdating}>
+          {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Icon className="mr-2 h-4 w-4" />}
+          {buttonText}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={() => handleUpdateStatus(status)} className={variant === 'destructive' ? 'bg-destructive text-destructive-foreground' : ''}>
+            Confirm
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 
   return (
     <AppLayout title="Customer Details">
@@ -231,15 +273,33 @@ export default function CustomerDetailPage() {
           </CardContent>
         </Card>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-4">
-            <Button variant="destructive" className="w-full" onClick={() => handleUpdateStatus('Locked')} disabled={isUpdating}>
-                {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}Lock
-            </Button>
-            <Button variant="secondary" className="bg-green-500 hover:bg-green-600 text-white w-full" onClick={() => handleUpdateStatus('Unlocked')} disabled={isUpdating}>
-                {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Unlock className="mr-2 h-4 w-4" />}Unlock
-            </Button>
-            <Button variant="outline" className="w-full col-span-2 lg:col-span-1" onClick={() => handleUpdateStatus('Removed')} disabled={isUpdating}>
-                 {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}Remove
-            </Button>
+            <ActionButton
+              status="Locked"
+              title="Lock Device?"
+              description="This will lock the device and restrict usage. Are you sure?"
+              buttonText="Lock"
+              variant="destructive"
+              icon={Lock}
+              className="w-full"
+            />
+             <ActionButton
+              status="Unlocked"
+              title="Unlock Device?"
+              description="This will unlock the device and restore full functionality. Are you sure?"
+              buttonText="Unlock"
+              variant="secondary"
+              icon={Unlock}
+              className="bg-green-500 hover:bg-green-600 text-white w-full"
+            />
+            <ActionButton
+              status="Removed"
+              title="Remove Customer?"
+              description="This action will mark the customer as removed. This cannot be undone. Are you sure?"
+              buttonText="Remove"
+              variant="outline"
+              icon={Trash2}
+              className="w-full col-span-2 lg:col-span-1"
+            />
             <Button variant="outline" className="w-full"><BellRing className="mr-2 h-4 w-4" />Send Reminder</Button>
             <Button variant="outline" className="w-full"><MapPin className="mr-2 h-4 w-4" />Track Location</Button>
         </div>
@@ -247,5 +307,3 @@ export default function CustomerDetailPage() {
     </AppLayout>
   );
 }
-
-    
