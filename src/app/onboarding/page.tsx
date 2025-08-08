@@ -25,6 +25,7 @@ import { Building, Loader2, Mail, MapPin, Phone, User as UserIcon } from "lucide
 import { useEffect, useState } from "react";
 import { User } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const formSchema = z.object({
   shop_owner_name: z.string().min(2, "Owner name is required"),
@@ -223,8 +224,15 @@ export default function OnboardingPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         <Card className="shadow-lg rounded-xl">
             <CardHeader className="flex flex-row items-center gap-4">
-                <UserIcon className="h-6 w-6 text-primary" />
-                <CardTitle className="text-xl text-primary mb-0">Personal Information</CardTitle>
+                <Avatar className="h-16 w-16">
+                    <AvatarImage src={user?.photoURL || undefined} alt="User Profile" />
+                    <AvatarFallback>
+                        <UserIcon className="h-8 w-8" />
+                    </AvatarFallback>
+                </Avatar>
+                <div>
+                  <CardTitle className="text-xl text-primary mb-0">Personal Information</CardTitle>
+                </div>
             </CardHeader>
             <CardContent className="pt-0">
                 <Separator className="mb-4" />
@@ -253,7 +261,7 @@ export default function OnboardingPage() {
                         <p className="text-muted-foreground text-sm">Dealer Code</p>
                         <div className="font-semibold bg-primary/10 text-primary p-2 rounded-lg inline-flex items-center gap-2 mt-1">
                             <Building className="h-4 w-4" />
-                            <span>{userData?.uid?.substring(0, 10)}...</span>
+                            <span>{userData?.uid}</span>
                         </div>
                     </div>
                 </div>
