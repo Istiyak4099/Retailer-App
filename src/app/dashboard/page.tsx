@@ -104,7 +104,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="space-y-2 pt-4">
-            <ListItem icon={Users} title="Total Users" value="3" href="/customers" />
+            <ListItem icon={Users} title="Total Customers" value="3" href="/customers" />
             <ListItem icon={KeyRound} title="Balance Keys" value="0" href="/balance" />
             <ListItem icon={UserCircle} title="User Profile" href="/onboarding" />
             <ListItem icon={Youtube} title="Installation Video" href="#" />

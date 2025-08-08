@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 
 export default function CustomersPage() {
   return (
-    <AppLayout title="Total Users">
+    <AppLayout title="Total Customers">
       <div className="space-y-4">
         <div className="flex items-center justify-between space-y-2">
           <div>

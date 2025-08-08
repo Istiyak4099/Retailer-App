@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 
 const mainNavItems = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
-  { href: "/customers", icon: User, label: "Total Users" },
+  { href: "/customers", icon: User, label: "Total Customers" },
   { href: "/balance", icon: CreditCard, label: "Balance Keys" },
   { href: "/onboarding", icon: User, label: "User Profile" },
   { href: "/installation-video", icon: Youtube, label: "Installation Video" },
