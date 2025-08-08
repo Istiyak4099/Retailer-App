@@ -33,31 +33,20 @@ export default function Home() {
   }, [user, loading]);
 
 
-  if (loading) {
+  if (loading || user) {
     return (
        <div className="flex h-screen w-full items-center justify-center bg-background p-4">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">{loading ? "Loading..." : "Redirecting..."}</p>
         </div>
       </div>
     );
   }
 
-  if (!user) {
-    return (
-       <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
-        <LoginForm />
-      </div>
-    );
-  }
-
   return (
-     <div className="flex h-screen w-full items-center justify-center bg-background p-4">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Redirecting...</p>
-      </div>
+      <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
+      <LoginForm />
     </div>
-  )
+  );
 }
