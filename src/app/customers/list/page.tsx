@@ -9,13 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Loader2, PlusCircle } from "lucide-react";
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 
 function titleCase(str: string) {
+  if (!str) return '';
   return str.replace(
     /\w\S*/g,
     function(txt) {
@@ -24,7 +25,7 @@ function titleCase(str: string) {
   );
 }
 
-export default function CustomersListPage() {
+function CustomersListPageContent() {
   const searchParams = useSearchParams();
   const status = searchParams.get('status');
   const [user] = useAuthState(auth);
@@ -33,7 +34,12 @@ export default function CustomersListPage() {
 
   useEffect(() => {
     const fetchCustomers = async () => {
-      if (!user) return;
+      if (!user) {
+        if (auth.currentUser === null) {
+            setLoading(false);
+        }
+        return;
+      };
       setLoading(true);
       try {
         let customerQuery = query(collection(db, 'Customers'), where("uid", "==", user.uid));
@@ -53,6 +59,7 @@ export default function CustomersListPage() {
 
             const emiQuery = query(
               collection(db, "EmiDetails"),
+              where("customerId", "in", fetchedCustomers.map(c => c.id)),
               where("created_time", ">=", Timestamp.fromDate(today)),
               where("created_time", "<", Timestamp.fromDate(tomorrow))
             );
@@ -114,8 +121,23 @@ export default function CustomersListPage() {
                     <CustomerTable customers={customers} />
                  )}
             </CardContent>
-        </card>
+        </Card>
       </div>
     </AppLayout>
   );
+}
+
+
+export default function CustomersListPage() {
+    return (
+        <Suspense fallback={
+            <AppLayout title="Loading...">
+                <div className="flex justify-center items-center h-64">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            </AppLayout>
+        }>
+            <CustomersListPageContent />
+        </Suspense>
+    )
 }
