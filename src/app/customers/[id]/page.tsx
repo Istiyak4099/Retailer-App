@@ -50,14 +50,17 @@ export default function CustomerDetailPage() {
   }
   
   const getStatusVariant = (
-    status: "Active" | "Locked" | "Completed"
+    status: Customer['status']
   ): "default" | "destructive" | "secondary" => {
     switch (status) {
       case "Active":
+      case "Unlocked":
         return "default";
       case "Locked":
         return "destructive";
       case "Completed":
+      case "Pending":
+      case "Removed":
         return "secondary";
       default:
         return "default";

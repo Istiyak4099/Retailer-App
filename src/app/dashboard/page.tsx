@@ -27,14 +27,16 @@ import {
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
 
-const StatCard = ({ icon: Icon, title, value, iconColor }: { icon: React.ElementType, title: string, value: string | number, iconColor?: string }) => (
-    <Card className="text-center shadow-md flex-shrink-0 w-[140px]">
-        <CardContent className="p-4">
-            <Icon className={cn("mx-auto h-8 w-8 text-primary mb-2", iconColor)} />
-            <p className="text-2xl font-bold">{value}</p>
-            <p className="text-xs text-muted-foreground">{title}</p>
-        </CardContent>
-    </Card>
+const StatCard = ({ icon: Icon, title, value, iconColor, href }: { icon: React.ElementType, title: string, value: string | number, iconColor?: string, href: string }) => (
+    <Link href={href} passHref>
+      <Card className="text-center shadow-md flex-shrink-0 w-[140px] h-full hover:bg-muted/50 transition-colors">
+          <CardContent className="p-4 flex flex-col items-center justify-center h-full">
+              <Icon className={cn("mx-auto h-8 w-8 text-primary mb-2", iconColor)} />
+              <p className="text-2xl font-bold">{value}</p>
+              <p className="text-xs text-muted-foreground">{title}</p>
+          </CardContent>
+      </Card>
+    </Link>
 );
 
 const ListItem = ({ icon: Icon, title, value, href }: { icon: React.ElementType, title: string, value?: string | number, href: string }) => (
@@ -65,25 +67,25 @@ export default function DashboardPage() {
         >
           <CarouselContent>
             <CarouselItem className="basis-auto">
-               <StatCard icon={CheckCircle} title="Today's Activation" value={0} iconColor="text-blue-500" />
+               <StatCard icon={CheckCircle} title="Today's Activation" value={0} iconColor="text-blue-500" href="/customers/list?status=today" />
             </CarouselItem>
              <CarouselItem className="basis-auto">
-               <StatCard icon={Users} title="Active Devices" value={3} />
+               <StatCard icon={Users} title="Active Devices" value={3} href="/customers/list?status=Active" />
             </CarouselItem>
             <CarouselItem className="basis-auto">
-               <StatCard icon={KeyRound} title="Balance Keys" value={0} />
+               <StatCard icon={KeyRound} title="Balance Keys" value={0} href="/balance" />
             </CarouselItem>
             <CarouselItem className="basis-auto">
-              <StatCard icon={Hourglass} title="Pending Devices" value={0} iconColor="text-orange-500" />
+              <StatCard icon={Hourglass} title="Pending Devices" value={0} iconColor="text-orange-500" href="/customers/list?status=Pending" />
             </CarouselItem>
             <CarouselItem className="basis-auto">
-              <StatCard icon={Lock} title="Locked Devices" value={0} iconColor="text-red-500" />
+              <StatCard icon={Lock} title="Locked Devices" value={0} iconColor="text-red-500" href="/customers/list?status=Locked" />
             </CarouselItem>
             <CarouselItem className="basis-auto">
-              <StatCard icon={Unlock} title="Unlocked Devices" value={0} iconColor="text-green-500" />
+              <StatCard icon={Unlock} title="Unlocked Devices" value={0} iconColor="text-green-500" href="/customers/list?status=Unlocked" />
             </CarouselItem>
             <CarouselItem className="basis-auto">
-               <StatCard icon={Trash2} title="Removed Devices" value={0} />
+               <StatCard icon={Trash2} title="Removed Devices" value={0} href="/customers/list?status=Removed" />
             </CarouselItem>
           </CarouselContent>
         </Carousel>
