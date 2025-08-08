@@ -58,6 +58,9 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
       down_payment: 0,
       number_of_emi: 6,
       emi_monthly_amount: 0,
+      nid_front: undefined,
+      nid_back: undefined,
+      live_photo: undefined,
     },
   });
 
@@ -219,7 +222,7 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
                 <FormField
                   control={form.control}
                   name="nid_front"
-                  render={({ field: { onChange, ...rest } }) => (
+                  render={({ field: { onChange, value, ...rest } }) => (
                     <FormItem>
                       <FormLabel>NID Front Side</FormLabel>
                       {nidFrontPreview && (
@@ -238,7 +241,7 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
                 <FormField
                   control={form.control}
                   name="nid_back"
-                  render={({ field: { onChange, ...rest } }) => (
+                  render={({ field: { onChange, value, ...rest } }) => (
                     <FormItem>
                       <FormLabel>NID Back Side</FormLabel>
                       {nidBackPreview && (
@@ -257,7 +260,7 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
                  <FormField
                   control={form.control}
                   name="live_photo"
-                  render={({ field: { onChange, ...rest } }) => (
+                  render={({ field: { onChange, value, ...rest } }) => (
                     <FormItem>
                       <FormLabel>Customer's Live Photo</FormLabel>
                       {livePhotoPreview && (
