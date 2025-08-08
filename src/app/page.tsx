@@ -30,7 +30,7 @@ export default function Home() {
     if (!loading) {
       checkOnboarding();
     }
-  }, [user, loading, router]);
+  }, [user, loading]);
 
 
   if (loading) {
