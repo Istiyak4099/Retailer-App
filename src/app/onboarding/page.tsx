@@ -52,6 +52,9 @@ export default function OnboardingPage() {
      if (user) {
       form.reset({
         shop_owner_name: user.displayName || "",
+        mobile_number: form.getValues().mobile_number,
+        shop_name: form.getValues().shop_name,
+        shop_address: form.getValues().shop_address
       })
     }
   }, [user, form]);
