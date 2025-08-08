@@ -19,10 +19,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { Loader2, UserCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User } from "@/lib/types";
 
 const formSchema = z.object({
   shop_owner_name: z.string().min(2, "Owner name is required"),
@@ -37,6 +39,7 @@ export default function OnboardingPage() {
   const { toast } = useToast();
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
+  const [isNewUser, setIsNewUser] = useState(true);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -49,14 +52,26 @@ export default function OnboardingPage() {
   });
 
   useEffect(() => {
-     if (user) {
-      form.reset({
-        shop_owner_name: user.displayName || "",
-        mobile_number: form.getValues().mobile_number || "",
-        shop_name: form.getValues().shop_name || "",
-        shop_address: form.getValues().shop_address || ""
-      })
-    }
+    const fetchUserData = async () => {
+      if (user) {
+        const userDocRef = doc(db, "Users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as User;
+          form.reset(userData);
+          setIsNewUser(false);
+        } else {
+           form.reset({
+            shop_owner_name: user.displayName || "",
+            mobile_number: "",
+            shop_name: "",
+            shop_address: ""
+          });
+          setIsNewUser(true);
+        }
+      }
+    };
+    fetchUserData();
   }, [user, form]);
 
 
@@ -68,23 +83,22 @@ export default function OnboardingPage() {
 
     try {
       await setDoc(doc(db, "Users", user.uid), {
-        shop_owner_name: values.shop_owner_name,
-        mobile_number: values.mobile_number,
+        ...values,
         email_address: user.email,
-        shop_name: values.shop_name,
-        shop_address: values.shop_address,
-        code_balance: 0,
-      });
+        uid: user.uid,
+      }, { merge: true });
 
       toast({
-        title: "Profile Created",
+        title: "Profile Updated",
         description: "Your information has been saved successfully.",
       });
 
-      router.push("/dashboard");
+      if (isNewUser) {
+        router.push("/dashboard");
+      }
 
     } catch (error) {
-      console.error("Error creating profile: ", error);
+      console.error("Error saving profile: ", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -95,7 +109,7 @@ export default function OnboardingPage() {
   
   if (loading) {
     return (
-      <AppLayout title="Onboarding">
+      <AppLayout title="Loading Profile...">
         <div className="flex justify-center items-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -103,14 +117,32 @@ export default function OnboardingPage() {
     )
   }
 
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return "";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("");
+  };
+
   return (
-    <AppLayout title="Retailer Onboarding">
+    <AppLayout title="User Profile">
       <Card className="max-w-2xl mx-auto shadow-lg rounded-xl">
         <CardHeader>
-          <CardTitle>Welcome! Complete Your Profile</CardTitle>
-          <CardDescription>
-            This information is needed to set up your retailer account.
-          </CardDescription>
+           <div className="flex items-center space-x-4">
+              <Avatar className="h-16 w-16 text-xl">
+                <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'}/>
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {getInitials(user?.displayName)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <CardTitle>{isNewUser ? "Welcome! Complete Your Profile" : "Edit Your Profile"}</CardTitle>
+                <CardDescription>
+                  {isNewUser ? "This information is needed to set up your retailer account." : "Keep your account details up to date."}
+                </CardDescription>
+              </div>
+           </div>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -179,7 +211,7 @@ export default function OnboardingPage() {
               <div className="flex justify-end">
                 <Button type="submit" disabled={form.formState.isSubmitting}>
                   {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Save and Continue
+                  {isNewUser ? 'Save and Continue' : 'Update Profile'}
                 </Button>
               </div>
             </form>

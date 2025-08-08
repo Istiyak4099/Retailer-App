@@ -1,3 +1,4 @@
+
 export interface User {
   uid: string;
   shop_owner_name: string;
@@ -5,7 +6,7 @@ export interface User {
   email_address: string;
   shop_name: string;
   shop_address: string;
-  code_balance: number;
+  code_balance?: number;
 }
 
 export interface Customer {
