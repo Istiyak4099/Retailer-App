@@ -26,6 +26,10 @@ import { addDoc, collection, doc, serverTimestamp, updateDoc } from "firebase/fi
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { v4 as uuidv4 } from 'uuid';
 
+const fileSchema = typeof window === 'undefined'
+  ? z.any()
+  : z.instanceof(FileList).refine(files => files?.length === 1, "File is required.");
+
 const formSchema = z.object({
   product_name: z.string().min(2, "Product name is required"),
   price: z.coerce.number().positive("Price must be positive"),
@@ -33,9 +37,9 @@ const formSchema = z.object({
   down_payment: z.coerce.number().min(0, "Cannot be negative"),
   number_of_emi: z.coerce.number().int().min(1, "At least 1 EMI"),
   emi_monthly_amount: z.coerce.number().positive("Amount must be positive"),
-  nid_front: z.instanceof(FileList).refine(files => files?.length === 1, "NID Front is required."),
-  nid_back: z.instanceof(FileList).refine(files => files?.length === 1, "NID Back is required."),
-  live_photo: z.instanceof(FileList).refine(files => files?.length === 1, "Live Photo is required."),
+  nid_front: fileSchema.refine(files => files?.length === 1, "NID Front is required."),
+  nid_back: fileSchema.refine(files => files?.length === 1, "NID Back is required."),
+  live_photo: fileSchema.refine(files => files?.length === 1, "Live Photo is required."),
 });
 
 export default function NewEmiPage({ params }: { params: { id: string } }) {
