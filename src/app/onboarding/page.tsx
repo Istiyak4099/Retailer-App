@@ -21,10 +21,10 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Loader2, UserCircle } from "lucide-react";
+import { Building, Loader2, Mail, MapPin, Phone, User as UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "@/lib/types";
+import { Separator } from "@/components/ui/separator";
 
 const formSchema = z.object({
   shop_owner_name: z.string().min(2, "Owner name is required"),
@@ -35,11 +35,23 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+const InfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string | undefined | null }) => (
+    <div className="flex items-start py-3">
+        <Icon className="h-5 w-5 text-primary mr-4 mt-1" />
+        <div>
+            <p className="text-muted-foreground text-sm">{label}</p>
+            <p className="font-semibold">{value || 'N/A'}</p>
+        </div>
+    </div>
+);
+
+
 export default function OnboardingPage() {
   const { toast } = useToast();
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
-  const [isNewUser, setIsNewUser] = useState(true);
+  const [userData, setUserData] = useState<User | null>(null);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -57,8 +69,9 @@ export default function OnboardingPage() {
         const userDocRef = doc(db, "Users", user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-          const userData = userDoc.data() as User;
-          form.reset(userData);
+          const fetchedData = userDoc.data() as User;
+          setUserData(fetchedData);
+          form.reset(fetchedData);
           setIsNewUser(false);
         } else {
            form.reset({
@@ -94,7 +107,12 @@ export default function OnboardingPage() {
       });
 
       if (isNewUser) {
-        router.push("/dashboard");
+        setIsNewUser(false);
+        const userDocRef = doc(db, "Users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+            setUserData(userDoc.data() as User);
+        }
       }
 
     } catch (error) {
@@ -117,107 +135,136 @@ export default function OnboardingPage() {
     )
   }
 
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return "";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("");
-  };
+  if (isNewUser) {
+    return (
+        <AppLayout title="Retailer Onboarding">
+        <Card className="max-w-2xl mx-auto shadow-lg rounded-xl">
+            <CardHeader>
+            <CardTitle>Welcome! Complete Your Profile</CardTitle>
+            <CardDescription>
+                This information is needed to set up your retailer account.
+            </CardDescription>
+            </CardHeader>
+            <CardContent>
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                    control={form.control}
+                    name="shop_owner_name"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Shop Owner Name</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g. John Doe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="mobile_number"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Mobile Number</FormLabel>
+                        <FormControl>
+                            <Input placeholder="11-digit mobile number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
+                <FormItem>
+                    <FormLabel>Email Address</FormLabel>
+                    <FormControl>
+                        <Input type="email" value={user?.email || ""} disabled />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                <FormField
+                    control={form.control}
+                    name="shop_name"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Shop Name</FormLabel>
+                        <FormControl>
+                        <Input placeholder="e.g. The Gadget Store" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="shop_address"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Shop Address</FormLabel>
+                        <FormControl>
+                        <Input placeholder="Full shop address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <div className="flex justify-end">
+                    <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save and Continue
+                    </Button>
+                </div>
+                </form>
+            </Form>
+            </CardContent>
+        </Card>
+        </AppLayout>
+    );
+  }
 
   return (
     <AppLayout title="User Profile">
-      <Card className="max-w-2xl mx-auto shadow-lg rounded-xl">
-        <CardHeader>
-           <div className="flex items-center space-x-4">
-              <Avatar className="h-16 w-16 text-xl">
-                <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'}/>
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {getInitials(user?.displayName)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <CardTitle>{isNewUser ? "Welcome! Complete Your Profile" : "Edit Your Profile"}</CardTitle>
-                <CardDescription>
-                  {isNewUser ? "This information is needed to set up your retailer account." : "Keep your account details up to date."}
-                </CardDescription>
-              </div>
-           </div>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <FormField
-                  control={form.control}
-                  name="shop_owner_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Shop Owner Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. John Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="mobile_number"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mobile Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="11-digit mobile number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-               <FormItem>
-                  <FormLabel>Email Address</FormLabel>
-                  <FormControl>
-                    <Input type="email" value={user?.email || ""} disabled />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              <FormField
-                control={form.control}
-                name="shop_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Shop Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. The Gadget Store" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="shop_address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Shop Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Full shop address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex justify-end">
-                <Button type="submit" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isNewUser ? 'Save and Continue' : 'Update Profile'}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+      <div className="max-w-2xl mx-auto space-y-6">
+        <Card className="shadow-lg rounded-xl">
+            <CardHeader className="flex flex-row items-center gap-4">
+                <UserIcon className="h-6 w-6 text-primary" />
+                <CardTitle className="text-xl text-primary mb-0">Personal Information</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+                <Separator className="mb-4" />
+                <InfoRow icon={UserIcon} label="Dealer Name" value={userData?.shop_owner_name} />
+                <Separator />
+                <InfoRow icon={Phone} label="Mobile Number" value={userData?.mobile_number} />
+                <Separator />
+                <InfoRow icon={Mail} label="Email Address" value={userData?.email_address} />
+            </CardContent>
+        </Card>
+
+        <Card className="shadow-lg rounded-xl">
+            <CardHeader className="flex flex-row items-center gap-4">
+                <Building className="h-6 w-6 text-primary" />
+                <CardTitle className="text-xl text-primary mb-0">Business Information</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+                 <Separator className="mb-4" />
+                <InfoRow icon={Building} label="Shop Name" value={userData?.shop_name} />
+                <Separator />
+                <InfoRow icon={MapPin} label="Address" value={userData?.shop_address} />
+                <Separator />
+                <div className="flex items-start py-3">
+                    <UserIcon className="h-5 w-5 text-primary mr-4 mt-1" />
+                    <div>
+                        <p className="text-muted-foreground text-sm">Dealer Code</p>
+                        <div className="font-semibold bg-primary/10 text-primary p-2 rounded-lg inline-flex items-center gap-2 mt-1">
+                            <Building className="h-4 w-4" />
+                            <span>{userData?.uid.substring(0, 10)}...</span>
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+      </div>
     </AppLayout>
   );
 }
