@@ -46,14 +46,14 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({
+  prompt: 'select_account'
+});
+
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const provider = new GoogleAuthProvider();
-
-  provider.setCustomParameters({
-    prompt: 'select_account'
-  });
 
   const handleLogin = async () => {
     try {
