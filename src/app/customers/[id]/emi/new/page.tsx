@@ -65,6 +65,7 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
   });
 
   const uploadFile = async (file: File) => {
+    if (!file) return null;
     const storageRef = ref(storage, `images/${uuidv4()}-${file.name}`);
     await uploadBytes(storageRef, file);
     return await getDownloadURL(storageRef);
@@ -77,6 +78,10 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
         uploadFile(values.nid_back[0]),
         uploadFile(values.live_photo[0])
       ]);
+
+      if (!nidFrontUrl || !nidBackUrl || !livePhotoUrl) {
+        throw new Error("One or more file uploads failed.");
+      }
 
       const total_emi = values.price - values.down_payment + values.processing_fee;
 
