@@ -26,7 +26,7 @@ import { useEffect } from "react";
 
 const formSchema = z.object({
   shop_owner_name: z.string().min(2, "Owner name is required"),
-  mobile_number: z.string().regex(/^\d{10}$/, "Invalid 10-digit mobile number"),
+  mobile_number: z.string().regex(/^\d{11}$/, "Invalid 11-digit mobile number"),
   shop_name: z.string().min(2, "Shop name is required"),
   shop_address: z.string().min(10, "Shop address is required"),
 });
@@ -133,7 +133,7 @@ export default function OnboardingPage() {
                     <FormItem>
                       <FormLabel>Mobile Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="10-digit mobile number" {...field} />
+                        <Input placeholder="11-digit mobile number" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

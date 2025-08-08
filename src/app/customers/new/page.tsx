@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   full_name: z.string().min(2, "Full name is required"),
-  mobile_number: z.string().regex(/^\d{10}$/, "Invalid 10-digit mobile number"),
+  mobile_number: z.string().regex(/^\d{11}$/, "Invalid 11-digit mobile number"),
   email_address: z.string().email("Invalid email address").optional().or(z.literal('')),
   phone_model: z.string().min(2, "Phone model is required"),
   imei_1: z.string().min(15, "IMEI must be 15 digits").max(15, "IMEI must be 15 digits"),
@@ -106,7 +106,7 @@ export default function NewCustomerPage() {
                     <FormItem>
                       <FormLabel>Mobile Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="10-digit mobile number" {...field} />
+                        <Input placeholder="11-digit mobile number" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
