@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, PlusCircle } from "lucide-react";
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useEffect, useMemo, useState } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
@@ -37,6 +37,7 @@ export default function CustomersListPage() {
       setLoading(true);
       try {
         let customerQuery = query(collection(db, 'Customers'), where("uid", "==", user.uid));
+        
         if (status && status !== 'today') {
             customerQuery = query(customerQuery, where('status', '==', titleCase(status)));
         }
@@ -45,9 +46,20 @@ export default function CustomersListPage() {
         let fetchedCustomers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
 
         if (status === 'today') {
-            // This is a placeholder. For real "today" filtering, you'd compare timestamps.
-            // For now, we just show active users as a demonstration.
-            fetchedCustomers = fetchedCustomers.filter(c => c.status === 'Active');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            const emiQuery = query(
+              collection(db, "EmiDetails"),
+              where("created_time", ">=", Timestamp.fromDate(today)),
+              where("created_time", "<", Timestamp.fromDate(tomorrow))
+            );
+            const emiSnapshot = await getDocs(emiQuery);
+            const todaysCustomerIds = new Set(emiSnapshot.docs.map(doc => doc.data().customerId));
+
+            fetchedCustomers = fetchedCustomers.filter(c => todaysCustomerIds.has(c.id));
         }
 
         setCustomers(fetchedCustomers);
@@ -102,7 +114,7 @@ export default function CustomersListPage() {
                     <CustomerTable customers={customers} />
                  )}
             </CardContent>
-        </Card>
+        </card>
       </div>
     </AppLayout>
   );
