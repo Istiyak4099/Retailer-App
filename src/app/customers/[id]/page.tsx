@@ -24,12 +24,13 @@ import {
   Loader2,
 } from "lucide-react";
 import Image from "next/image";
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { format } from 'date-fns';
+import { useToast } from "@/hooks/use-toast";
 
 const InfoRow = ({ label, value }: { label: string; value: string | number | undefined | null }) => (
   <div className="flex justify-between py-2">
@@ -45,10 +46,13 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
 export default function CustomerDetailPage() {
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const router = useRouter();
+  const { toast } = useToast();
   
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [emiDetails, setEmiDetails] = useState<EmiDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -77,12 +81,39 @@ export default function CustomerDetailPage() {
         }
       } catch (error) {
         console.error("Error fetching customer data:", error);
+         toast({ variant: "destructive", title: "Error", description: "Could not fetch customer data." });
       } finally {
         setLoading(false);
       }
     };
     fetchCustomerData();
-  }, [id]);
+  }, [id, toast]);
+  
+  const handleUpdateStatus = async (newStatus: Customer['status']) => {
+    if (!customer) return;
+    setIsUpdating(true);
+    try {
+        const customerDocRef = doc(db, "Customers", customer.id);
+        await updateDoc(customerDocRef, { status: newStatus });
+        setCustomer(prev => prev ? { ...prev, status: newStatus } : null);
+        toast({
+            title: "Status Updated",
+            description: `Customer status changed to ${newStatus}.`,
+        });
+        if (newStatus === "Removed") {
+            router.push('/customers/list?status=Removed');
+        }
+    } catch (error) {
+        console.error("Error updating status:", error);
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Could not update the customer's status.",
+        });
+    } finally {
+        setIsUpdating(false);
+    }
+  };
 
 
   if (loading) {
@@ -200,9 +231,15 @@ export default function CustomerDetailPage() {
           </CardContent>
         </Card>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-4">
-            <Button variant="destructive" className="w-full"><Lock className="mr-2 h-4 w-4" />Lock</Button>
-            <Button variant="secondary" className="bg-green-500 hover:bg-green-600 text-white w-full"><Unlock className="mr-2 h-4 w-4" />Unlock</Button>
-            <Button variant="outline" className="w-full col-span-2 lg:col-span-1"><Trash2 className="mr-2 h-4 w-4" />Remove</Button>
+            <Button variant="destructive" className="w-full" onClick={() => handleUpdateStatus('Locked')} disabled={isUpdating}>
+                {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}Lock
+            </Button>
+            <Button variant="secondary" className="bg-green-500 hover:bg-green-600 text-white w-full" onClick={() => handleUpdateStatus('Unlocked')} disabled={isUpdating}>
+                {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Unlock className="mr-2 h-4 w-4" />}Unlock
+            </Button>
+            <Button variant="outline" className="w-full col-span-2 lg:col-span-1" onClick={() => handleUpdateStatus('Removed')} disabled={isUpdating}>
+                 {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}Remove
+            </Button>
             <Button variant="outline" className="w-full"><BellRing className="mr-2 h-4 w-4" />Send Reminder</Button>
             <Button variant="outline" className="w-full"><MapPin className="mr-2 h-4 w-4" />Track Location</Button>
         </div>
@@ -210,3 +247,5 @@ export default function CustomerDetailPage() {
     </AppLayout>
   );
 }
+
+    
