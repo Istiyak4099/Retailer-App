@@ -5,12 +5,12 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyC21T8V4-iQ8cE9zT8sY3wV1uJ0aGfX_kY",
+  apiKey: "AIzaSyDzfjJoXHXUxBxV8vQidAz7oFCEy5CSJTI",
   authDomain: "retailer-emi-assist-kiwfo.firebaseapp.com",
   projectId: "retailer-emi-assist-kiwfo",
-  storageBucket: "retailer-emi-assist-kiwfo.appspot.com",
-  messagingSenderId: "653757049444",
-  appId: "1:653757049444:web:0f4a8e3c1a2b3c4d5e6f7g",
+  storageBucket: "retailer-emi-assist-kiwfo.firebasestorage.app",
+  messagingSenderId: "167466574794",
+  appId: "1:167466574794:web:07102b06a5d2478c4ae533"
 };
 
 // Initialize Firebase
