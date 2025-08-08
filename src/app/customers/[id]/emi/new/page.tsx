@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -19,6 +20,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { CheckCircle } from "lucide-react";
+import { useState } from "react";
+import Image from "next/image";
 
 const formSchema = z.object({
   product_name: z.string().min(2, "Product name is required"),
@@ -35,6 +38,10 @@ const formSchema = z.object({
 export default function NewEmiPage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
   const router = useRouter();
+  const [nidFrontPreview, setNidFrontPreview] = useState<string | null>(null);
+  const [nidBackPreview, setNidBackPreview] = useState<string | null>(null);
+  const [livePhotoPreview, setLivePhotoPreview] = useState<string | null>(null);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -55,9 +62,18 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
     router.push("/dashboard");
   }
 
-  const nidFrontRef = form.register("nid_front");
-  const nidBackRef = form.register("nid_back");
-  const livePhotoRef = form.register("live_photo");
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, setter: (url: string | null) => void) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setter(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setter(null);
+    }
+  };
 
   return (
     <AppLayout title="New EMI Details">
@@ -157,11 +173,17 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
                 <FormField
                   control={form.control}
                   name="nid_front"
-                  render={({ field }) => (
+                  render={({ field: { onChange, ...rest } }) => (
                     <FormItem>
                       <FormLabel>NID Front Side</FormLabel>
+                      {nidFrontPreview && (
+                         <Image src={nidFrontPreview} alt="NID Front Preview" width={300} height={200} className="rounded-lg w-full object-contain h-48" />
+                      )}
                       <FormControl>
-                        <Input type="file" {...nidFrontRef} />
+                        <Input type="file" {...rest} onChange={(e) => {
+                            onChange(e.target.files);
+                            handleFileChange(e, setNidFrontPreview);
+                        }} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -170,11 +192,17 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
                 <FormField
                   control={form.control}
                   name="nid_back"
-                  render={({ field }) => (
+                  render={({ field: { onChange, ...rest } }) => (
                     <FormItem>
                       <FormLabel>NID Back Side</FormLabel>
+                      {nidBackPreview && (
+                         <Image src={nidBackPreview} alt="NID Back Preview" width={300} height={200} className="rounded-lg w-full object-contain h-48" />
+                      )}
                       <FormControl>
-                         <Input type="file" {...nidBackRef} />
+                         <Input type="file" {...rest} onChange={(e) => {
+                            onChange(e.target.files);
+                            handleFileChange(e, setNidBackPreview);
+                         }} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -183,11 +211,17 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
                  <FormField
                   control={form.control}
                   name="live_photo"
-                  render={({ field }) => (
+                  render={({ field: { onChange, ...rest } }) => (
                     <FormItem>
                       <FormLabel>Customer's Live Photo</FormLabel>
+                      {livePhotoPreview && (
+                         <Image src={livePhotoPreview} alt="Live Photo Preview" width={300} height={200} className="rounded-lg w-full object-contain h-48" />
+                      )}
                       <FormControl>
-                        <Input type="file" accept="image/*" capture="user" {...livePhotoRef} />
+                        <Input type="file" accept="image/*" capture="user" {...rest} onChange={(e) => {
+                            onChange(e.target.files);
+                            handleFileChange(e, setLivePhotoPreview);
+                        }} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
