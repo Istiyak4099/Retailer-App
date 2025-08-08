@@ -51,6 +51,10 @@ export function LoginForm() {
   const { toast } = useToast();
   const provider = new GoogleAuthProvider();
 
+  provider.setCustomParameters({
+    prompt: 'select_account'
+  });
+
   const handleLogin = async () => {
     try {
       const result = await signInWithPopup(auth, provider);
