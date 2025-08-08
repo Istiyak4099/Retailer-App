@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -19,9 +18,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
+import { db, storage } from "@/lib/firebase";
+import { addDoc, collection, doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { v4 as uuidv4 } from 'uuid';
 
 const formSchema = z.object({
   product_name: z.string().min(2, "Product name is required"),
@@ -30,9 +33,9 @@ const formSchema = z.object({
   down_payment: z.coerce.number().min(0, "Cannot be negative"),
   number_of_emi: z.coerce.number().int().min(1, "At least 1 EMI"),
   emi_monthly_amount: z.coerce.number().positive("Amount must be positive"),
-  nid_front: z.any().refine(file => file?.length == 1, "NID Front is required."),
-  nid_back: z.any().refine(file => file?.length == 1, "NID Back is required."),
-  live_photo: z.any().refine(file => file?.length == 1, "Live Photo is required."),
+  nid_front: z.instanceof(FileList).refine(files => files?.length === 1, "NID Front is required."),
+  nid_back: z.instanceof(FileList).refine(files => files?.length === 1, "NID Back is required."),
+  live_photo: z.instanceof(FileList).refine(files => files?.length === 1, "Live Photo is required."),
 });
 
 export default function NewEmiPage({ params }: { params: { id: string } }) {
@@ -53,13 +56,51 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log({ customerId: params.id, ...values });
-    toast({
-      title: "EMI Created Successfully",
-      description: "The new customer and EMI plan have been saved.",
-    });
-    router.push("/dashboard");
+  const uploadFile = async (file: File) => {
+    const storageRef = ref(storage, `images/${uuidv4()}-${file.name}`);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
+  };
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      const [nidFrontUrl, nidBackUrl, livePhotoUrl] = await Promise.all([
+        uploadFile(values.nid_front[0]),
+        uploadFile(values.nid_back[0]),
+        uploadFile(values.live_photo[0])
+      ]);
+
+      const total_emi = values.price - values.down_payment + values.processing_fee;
+
+      await addDoc(collection(db, "EmiDetails"), {
+        customerId: params.id,
+        product_name: values.product_name,
+        price: values.price,
+        processing_fee: values.processing_fee,
+        down_payment: values.down_payment,
+        number_of_emi: values.number_of_emi,
+        emi_monthly_amount: values.emi_monthly_amount,
+        total_emi: total_emi,
+        nid_front: nidFrontUrl,
+        nid_back: nidBackUrl,
+        live_photo: livePhotoUrl,
+        created_time: serverTimestamp(),
+      });
+      
+      const customerDocRef = doc(db, "Customers", params.id);
+      await updateDoc(customerDocRef, {
+        status: "Active"
+      });
+
+      toast({
+        title: "EMI Created Successfully",
+        description: "The new EMI plan has been saved.",
+      });
+      router.push(`/customers/${params.id}`);
+    } catch (error) {
+        console.error("Error creating EMI:", error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to create EMI plan." });
+    }
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, setter: (url: string | null) => void) => {
@@ -229,7 +270,8 @@ export default function NewEmiPage({ params }: { params: { id: string } }) {
                 />
               </div>
               <div className="flex justify-end">
-                <Button type="submit">
+                <Button type="submit" disabled={form.formState.isSubmitting}>
+                   {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Create EMI Plan <CheckCircle className="ml-2 h-4 w-4" />
                 </Button>
               </div>

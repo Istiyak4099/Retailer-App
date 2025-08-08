@@ -26,6 +26,9 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
 
 const mainNavItems = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
@@ -47,6 +50,18 @@ export function AppLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({ title: "Logged Out", description: "You have been successfully logged out." });
+      router.push("/");
+    } catch (error) {
+      console.error("Logout Error:", error);
+      toast({ variant: "destructive", title: "Logout Failed", description: "Could not log you out. Please try again." });
+    }
+  };
 
   return (
     <SidebarProvider>
@@ -83,7 +98,7 @@ export function AppLayout({
                         <Bell className="h-5 w-5" />
                         <span className="sr-only">Notifications</span>
                     </Button>
-                    <Button variant="ghost" size="icon" className="rounded-full text-primary-foreground hover:text-primary-foreground hover:bg-primary/80" onClick={() => router.push('/')}>
+                    <Button variant="ghost" size="icon" className="rounded-full text-primary-foreground hover:text-primary-foreground hover:bg-primary/80" onClick={handleLogout}>
                         <LogOut className="h-5 w-5" />
                         <span className="sr-only">Logout</span>
                     </Button>

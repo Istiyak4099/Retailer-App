@@ -1,12 +1,42 @@
+
+"use client";
+
 import { AppLayout } from "@/components/app-layout";
 import { CustomerTable } from "@/components/dashboard/customer-table";
-import { mockCustomers } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { Loader2, PlusCircle } from "lucide-react";
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth, db } from "@/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { Customer } from "@/lib/types";
 
 export default function CustomersPage() {
+  const [user] = useAuthState(auth);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      if (!user) return;
+      setLoading(true);
+      try {
+        const q = query(collection(db, "Customers"), where("uid", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+        const fetchedCustomers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
+        setCustomers(fetchedCustomers);
+      } catch (error) {
+        console.error("Error fetching customers:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, [user]);
+
   return (
     <AppLayout title="Total Customers">
       <div className="space-y-4">
@@ -32,7 +62,13 @@ export default function CustomersPage() {
                 <CardDescription>Manage your customers and view their EMI status.</CardDescription>
             </CardHeader>
             <CardContent>
-                 <CustomerTable customers={mockCustomers} />
+                {loading ? (
+                    <div className="flex justify-center items-center h-64">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                 ) : (
+                    <CustomerTable customers={customers} />
+                 )}
             </CardContent>
         </Card>
       </div>

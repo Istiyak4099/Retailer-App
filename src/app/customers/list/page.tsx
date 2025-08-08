@@ -4,13 +4,16 @@
 import { useSearchParams } from 'next/navigation'
 import { AppLayout } from "@/components/app-layout";
 import { CustomerTable } from "@/components/dashboard/customer-table";
-import { mockCustomers } from "@/lib/data";
 import { Customer } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { Loader2, PlusCircle } from "lucide-react";
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
 
 function titleCase(str: string) {
   return str.replace(
@@ -24,17 +27,39 @@ function titleCase(str: string) {
 export default function CustomersListPage() {
   const searchParams = useSearchParams();
   const status = searchParams.get('status');
+  const [user] = useAuthState(auth);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredCustomers = useMemo(() => {
-    if (!status) {
-      return mockCustomers;
-    }
-    if (status === 'today') {
-        // Add logic for 'today's activation' if needed. For now, returning empty.
-        return [];
-    }
-    return mockCustomers.filter(customer => customer.status.toLowerCase() === status.toLowerCase());
-  }, [status]);
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      if (!user) return;
+      setLoading(true);
+      try {
+        let customerQuery = query(collection(db, 'Customers'), where("uid", "==", user.uid));
+        if (status && status !== 'today') {
+            customerQuery = query(customerQuery, where('status', '==', titleCase(status)));
+        }
+        
+        const querySnapshot = await getDocs(customerQuery);
+        let fetchedCustomers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
+
+        if (status === 'today') {
+            // This is a placeholder. For real "today" filtering, you'd compare timestamps.
+            // For now, we just show active users as a demonstration.
+            fetchedCustomers = fetchedCustomers.filter(c => c.status === 'Active');
+        }
+
+        setCustomers(fetchedCustomers);
+
+      } catch (error) {
+        console.error("Error fetching customers:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCustomers();
+  }, [status, user]);
 
   let pageTitle = status ? `${titleCase(status)} Customers` : "All Customers";
   let pageDescription = status ? `A list of your customers with status: ${titleCase(status)}` : "Here's a list of all your EMI customers.";
@@ -69,7 +94,13 @@ export default function CustomersListPage() {
                 <CardDescription>Manage your customers and view their EMI status.</CardDescription>
             </CardHeader>
             <CardContent>
-                 <CustomerTable customers={filteredCustomers} />
+                 {loading ? (
+                    <div className="flex justify-center items-center h-64">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                 ) : (
+                    <CustomerTable customers={customers} />
+                 )}
             </CardContent>
         </Card>
       </div>

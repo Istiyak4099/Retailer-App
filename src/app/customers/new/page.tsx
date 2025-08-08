@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -17,7 +18,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth, db } from "@/lib/firebase";
+import { addDoc, collection } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   full_name: z.string().min(2, "Full name is required"),
@@ -30,6 +35,9 @@ const formSchema = z.object({
 
 export default function NewCustomerPage() {
   const router = useRouter();
+  const [user] = useAuthState(auth);
+  const { toast } = useToast();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -42,11 +50,24 @@ export default function NewCustomerPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    // In a real app, you would save this data and get a customer ID.
-    const newCustomerId = Math.random().toString(36).substring(7);
-    router.push(`/customers/${newCustomerId}/emi/new`);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+      toast({ variant: "destructive", title: "Not Authenticated", description: "You need to be logged in to add a customer." });
+      return;
+    }
+
+    try {
+      const docRef = await addDoc(collection(db, "Customers"), {
+        ...values,
+        uid: user.uid,
+        status: "Pending",
+      });
+      toast({ title: "Customer Added", description: "Step 1 completed successfully." });
+      router.push(`/customers/${docRef.id}/emi/new`);
+    } catch (error) {
+      console.error("Error adding customer: ", error);
+      toast({ variant: "destructive", title: "Error", description: "Failed to add customer. Please try again." });
+    }
   }
 
   return (
@@ -144,7 +165,8 @@ export default function NewCustomerPage() {
                 />
               </div>
               <div className="flex justify-end">
-                <Button type="submit">
+                 <Button type="submit" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Next: EMI Details <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>

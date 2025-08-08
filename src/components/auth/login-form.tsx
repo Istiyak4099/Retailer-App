@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -10,6 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { auth } from "@/lib/firebase";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -42,17 +48,36 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export function LoginForm() {
   const router = useRouter();
+  const { toast } = useToast();
+  const provider = new GoogleAuthProvider();
 
-  const handleLogin = () => {
-    // In a real app, this would involve an OAuth flow.
-    // For this demo, we'll just redirect.
-    router.push("/dashboard");
+  const handleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      const userDocRef = doc(db, "Users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        router.push("/dashboard");
+      } else {
+        router.push("/onboarding");
+      }
+    } catch (error) {
+      console.error("Error during sign-in:", error);
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: "Could not sign in with Google. Please try again.",
+      });
+    }
   };
 
   return (
     <Card className="w-full max-w-sm shadow-xl rounded-xl">
       <CardHeader>
-        <CardTitle className="text-xl font-headline">Welcome Back</CardTitle>
+        <CardTitle className="text-xl font-headline">Retailer EMI Assist</CardTitle>
         <CardDescription>
           Please sign in using your Google account to continue.
         </CardDescription>

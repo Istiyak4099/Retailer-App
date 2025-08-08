@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -16,43 +17,96 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth, db } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   shop_owner_name: z.string().min(2, "Owner name is required"),
-  mobile_number: z.string().regex(/^\d{10}$/, "Invalid mobile number"),
-  email_address: z.string().email("Invalid email address"),
+  mobile_number: z.string().regex(/^\d{10}$/, "Invalid 10-digit mobile number"),
   shop_name: z.string().min(2, "Shop name is required"),
   shop_address: z.string().min(10, "Shop address is required"),
 });
 
+type FormData = z.infer<typeof formSchema>;
+
 export default function OnboardingPage() {
   const { toast } = useToast();
-  const form = useForm<z.infer<typeof formSchema>>({
+  const [user, loading] = useAuthState(auth);
+  const router = useRouter();
+
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      shop_owner_name: "John Doe",
-      mobile_number: "9876543210",
-      email_address: "owner@example.com",
-      shop_name: "JD Electronics",
-      shop_address: "123 Main Street, Anytown, USA",
+      shop_owner_name: "",
+      mobile_number: "",
+      shop_name: "",
+      shop_address: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast({
-      title: "Profile Updated",
-      description: "Your information has been saved successfully.",
-    });
+  useEffect(() => {
+     if (user) {
+      form.reset({
+        shop_owner_name: user.displayName || "",
+      })
+    }
+  }, [user, form]);
+
+
+  async function onSubmit(values: FormData) {
+    if (!user) {
+        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in." });
+        return;
+    }
+
+    try {
+      await setDoc(doc(db, "Users", user.uid), {
+        shop_owner_name: values.shop_owner_name,
+        mobile_number: values.mobile_number,
+        email_address: user.email,
+        shop_name: values.shop_name,
+        shop_address: values.shop_address,
+        code_balance: 0,
+      });
+
+      toast({
+        title: "Profile Created",
+        description: "Your information has been saved successfully.",
+      });
+
+      router.push("/dashboard");
+
+    } catch (error) {
+      console.error("Error creating profile: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not save your profile. Please try again.",
+      });
+    }
+  }
+  
+  if (loading) {
+    return (
+      <AppLayout title="Onboarding">
+        <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    )
   }
 
   return (
     <AppLayout title="Retailer Onboarding">
       <Card className="max-w-2xl mx-auto shadow-lg rounded-xl">
         <CardHeader>
-          <CardTitle>Your Profile</CardTitle>
+          <CardTitle>Welcome! Complete Your Profile</CardTitle>
           <CardDescription>
-            Complete your profile to get started. This information will be used to manage your account.
+            This information is needed to set up your retailer account.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -86,19 +140,13 @@ export default function OnboardingPage() {
                   )}
                 />
               </div>
-               <FormField
-                  control={form.control}
-                  name="email_address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email Address</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="e.g. name@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+               <FormItem>
+                  <FormLabel>Email Address</FormLabel>
+                  <FormControl>
+                    <Input type="email" value={user?.email || ""} disabled />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               <FormField
                 control={form.control}
                 name="shop_name"
@@ -126,7 +174,10 @@ export default function OnboardingPage() {
                 )}
               />
               <div className="flex justify-end">
-                <Button type="submit">Update Profile</Button>
+                <Button type="submit" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save and Continue
+                </Button>
               </div>
             </form>
           </Form>
