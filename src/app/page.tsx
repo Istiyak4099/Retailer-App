@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { LoginForm } from '@/components/auth/login-form';
 import { Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -14,10 +14,15 @@ import { db } from '@/lib/firebase';
 export default function Home() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
+  const hasChecked = useRef(false);
 
   useEffect(() => {
     const checkOnboarding = async () => {
       if (user) {
+        // Prevent re-running the check
+        if (hasChecked.current) return;
+        hasChecked.current = true;
+
         const userDoc = await getDoc(doc(db, "Users", user.uid));
         if (userDoc.exists()) {
           router.replace('/dashboard');
@@ -27,10 +32,15 @@ export default function Home() {
       }
     };
 
+    if (!loading && !user) {
+        // If not loading and no user, we can safely reset for the next login attempt
+        hasChecked.current = false;
+    }
+
     if (!loading) {
       checkOnboarding();
     }
-  }, [user, loading]);
+  }, [user, loading, router]);
 
 
   if (loading || user) {
