@@ -22,6 +22,7 @@ import {
   Lock,
   Unlock,
   Trash2,
+  CheckCircle,
 } from "lucide-react";
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
@@ -64,6 +65,15 @@ export default function DashboardPage() {
         >
           <CarouselContent>
             <CarouselItem className="basis-auto">
+               <StatCard icon={CheckCircle} title="Today's Activation" value={0} iconColor="text-blue-500" />
+            </CarouselItem>
+             <CarouselItem className="basis-auto">
+               <StatCard icon={Users} title="Active Devices" value={3} />
+            </CarouselItem>
+            <CarouselItem className="basis-auto">
+               <StatCard icon={KeyRound} title="Balance Keys" value={0} />
+            </CarouselItem>
+            <CarouselItem className="basis-auto">
               <StatCard icon={Hourglass} title="Pending Devices" value={0} iconColor="text-orange-500" />
             </CarouselItem>
             <CarouselItem className="basis-auto">
@@ -74,9 +84,6 @@ export default function DashboardPage() {
             </CarouselItem>
             <CarouselItem className="basis-auto">
                <StatCard icon={Trash2} title="Removed Devices" value={0} />
-            </CarouselItem>
-             <CarouselItem className="basis-auto">
-               <StatCard icon={Users} title="Active Devices" value={3} />
             </CarouselItem>
           </CarouselContent>
         </Carousel>
