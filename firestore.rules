@@ -1,21 +1,22 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Allow users to read and write their own user document
+    // Users can only read and write to their own document in the Users collection.
     match /Users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Allow authenticated users to read/write their own customer and EMI data
+    // Users can create, read, update, and delete customer documents if the customer's uid matches their own.
     match /Customers/{customerId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow read, update, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
     }
 
+    // Users can manage EMI details. For simplicity, we allow any authenticated user to manage these.
+    // In a real-world scenario, you'd add rules to ensure only the customer's retailer can access this.
     match /EmiDetails/{emiId} {
-        allow read, write: if request.auth != null; // Allow any authenticated user to handle EMI details
+      allow read, write: if request.auth != null;
     }
   }
 }
