@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useMemo } from 'react';
 
-function-title-case(str: string) {
+function titleCase(str: string) {
   return str.replace(
     /\w\S*/g,
     function(txt) {
@@ -36,8 +36,8 @@ export default function CustomersListPage() {
     return mockCustomers.filter(customer => customer.status.toLowerCase() === status.toLowerCase());
   }, [status]);
 
-  const pageTitle = status ? `${function-title-case(status)} Customers` : "All Customers";
-  const pageDescription = status ? `A list of your customers with status: ${function-title-case(status)}` : "Here's a list of all your EMI customers.";
+  let pageTitle = status ? `${titleCase(status)} Customers` : "All Customers";
+  let pageDescription = status ? `A list of your customers with status: ${titleCase(status)}` : "Here's a list of all your EMI customers.";
 
   if (status === 'today') {
     pageTitle = "Today's Activations";
