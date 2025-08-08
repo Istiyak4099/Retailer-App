@@ -69,8 +69,8 @@ export default function OnboardingPage() {
         const userDocRef = doc(db, "Users", user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-          const fetchedData = userDoc.data() as User;
-          setUserData(fetchedData);
+          const fetchedData = userDoc.data() as Omit<User, 'uid'>;
+          setUserData({ ...fetchedData, uid: user.uid });
           form.reset(fetchedData);
           setIsNewUser(false);
         } else {
@@ -95,25 +95,20 @@ export default function OnboardingPage() {
     }
 
     try {
-      await setDoc(doc(db, "Users", user.uid), {
+      const userPayload = {
         ...values,
         email_address: user.email,
-        uid: user.uid,
-      }, { merge: true });
+      };
+
+      await setDoc(doc(db, "Users", user.uid), userPayload, { merge: true });
 
       toast({
         title: "Profile Updated",
         description: "Your information has been saved successfully.",
       });
-
-      if (isNewUser) {
-        setIsNewUser(false);
-        const userDocRef = doc(db, "Users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-            setUserData(userDoc.data() as User);
-        }
-      }
+      
+      setUserData({ ...userPayload, uid: user.uid });
+      setIsNewUser(false);
 
     } catch (error) {
       console.error("Error saving profile: ", error);
@@ -258,7 +253,7 @@ export default function OnboardingPage() {
                         <p className="text-muted-foreground text-sm">Dealer Code</p>
                         <div className="font-semibold bg-primary/10 text-primary p-2 rounded-lg inline-flex items-center gap-2 mt-1">
                             <Building className="h-4 w-4" />
-                            <span>{userData?.uid.substring(0, 10)}...</span>
+                            <span>{userData?.uid?.substring(0, 10)}...</span>
                         </div>
                     </div>
                 </div>
