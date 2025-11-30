@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow read and write access to the "images" folder for any authenticated user.
+    // In a production app, you might want to restrict this further, e.g., only allow users to write to their own subfolder.
+    match /images/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
