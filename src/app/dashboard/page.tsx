@@ -62,7 +62,6 @@ const ListItem = ({ icon: Icon, title, value, href, loading }: { icon: React.Ele
 
 
 export default function DashboardPage() {
-  const [user] = useAuthState(auth);
   const [stats, setStats] = useState({
     today: 0,
     active: 0,
@@ -77,12 +76,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!user) return;
       setLoading(true);
       try {
         const customerQuery = collection(db, 'Customers');
-        const userCustomersQuery = query(customerQuery, where("uid", "==", user.uid));
-        const querySnapshot = await getDocs(userCustomersQuery);
+        const querySnapshot = await getDocs(customerQuery);
         
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -111,12 +108,9 @@ export default function DashboardPage() {
             }
         });
 
-        // Filter today's activations for the current user
         const customerIds = querySnapshot.docs.map(doc => doc.id);
         const userTodaysActivations = [...todaysActivations].filter(id => customerIds.includes(id)).length;
-
-        // Fetch balance from user profile
-        // This is a placeholder, as the user profile logic needs to be fully implemented
+        
         const balance = 0; 
         
         setStats({ today: userTodaysActivations, active, balance, pending, locked, unlocked, removed, total });
@@ -128,65 +122,68 @@ export default function DashboardPage() {
       }
     };
     fetchStats();
-  }, [user]);
+  }, []);
 
   return (
-    <div className="space-y-4">
-        <Carousel
-          opts={{
-            align: "start",
-            dragFree: true,
-          }}
-          className="w-full"
-        >
-          <CarouselContent>
-            <CarouselItem className="basis-auto">
-               <StatCard icon={CheckCircle} title="Today's Activation" value={stats.today} iconColor="text-blue-500" href="/customers/list?status=today" loading={loading} />
-            </CarouselItem>
-             <CarouselItem className="basis-auto">
-               <StatCard icon={Users} title="Active Devices" value={stats.active} href="/customers/list?status=Active" loading={loading} />
-            </CarouselItem>
-            <CarouselItem className="basis-auto">
-               <StatCard icon={KeyRound} title="Balance Keys" value={stats.balance} href="/balance" loading={loading} />
-            </CarouselItem>
-            <CarouselItem className="basis-auto">
-              <StatCard icon={Hourglass} title="Pending Devices" value={stats.pending} iconColor="text-orange-500" href="/customers/list?status=Pending" loading={loading} />
-            </CarouselItem>
-            <CarouselItem className="basis-auto">
-              <StatCard icon={Lock} title="Locked Devices" value={stats.locked} iconColor="text-red-500" href="/customers/list?status=Locked" loading={loading} />
-            </CarouselItem>
-            <CarouselItem className="basis-auto">
-              <StatCard icon={Unlock} title="Unlocked Devices" value={stats.unlocked} iconColor="text-green-500" href="/customers/list?status=Unlocked" loading={loading} />
-            </CarouselItem>
-            <CarouselItem className="basis-auto">
-               <StatCard icon={Trash2} title="Removed Devices" value={stats.removed} href="/customers/list?status=Removed" loading={loading} />
-            </CarouselItem>
-          </CarouselContent>
-        </Carousel>
+    <AppLayout title="Dashboard">
+        <div className="space-y-4">
+            <Carousel
+            opts={{
+                align: "start",
+                dragFree: true,
+            }}
+            className="w-full"
+            >
+            <CarouselContent>
+                <CarouselItem className="basis-auto">
+                <StatCard icon={CheckCircle} title="Today's Activation" value={stats.today} iconColor="text-blue-500" href="/customers/list?status=today" loading={loading} />
+                </CarouselItem>
+                <CarouselItem className="basis-auto">
+                <StatCard icon={Users} title="Active Devices" value={stats.active} href="/customers/list?status=Active" loading={loading} />
+                </CarouselItem>
+                <CarouselItem className="basis-auto">
+                <StatCard icon={KeyRound} title="Balance Keys" value={stats.balance} href="/balance" loading={loading} />
+                </CarouselItem>
+                <CarouselItem className="basis-auto">
+                <StatCard icon={Hourglass} title="Pending Devices" value={stats.pending} iconColor="text-orange-500" href="/customers/list?status=Pending" loading={loading} />
+                </CarouselItem>
+                <CarouselItem className="basis-auto">
+                <StatCard icon={Lock} title="Locked Devices" value={stats.locked} iconColor="text-red-500" href="/customers/list?status=Locked" loading={loading} />
+                </CarouselItem>
+                <CarouselItem className="basis-auto">
+                <StatCard icon={Unlock} title="Unlocked Devices" value={stats.unlocked} iconColor="text-green-500" href="/customers/list?status=Unlocked" loading={loading} />
+                </CarouselItem>
+                <CarouselItem className="basis-auto">
+                <StatCard icon={Trash2} title="Removed Devices" value={stats.removed} href="/customers/list?status=Removed" loading={loading} />
+                </CarouselItem>
+            </CarouselContent>
+            </Carousel>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link href="/customers/new" passHref>
-                <Button className="w-full h-12 text-lg" size="lg">
-                    <UserPlus className="mr-2 h-6 w-6" />
-                    Add Customer
-                </Button>
-            </Link>
-             <Link href="/install" passHref>
-                <Button className="w-full h-12 text-lg" size="lg" variant="secondary">
-                    <QrCode className="mr-2 h-6 w-6" />
-                    Scan Device QR Code
-                </Button>
-            </Link>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Link href="/customers/new" passHref>
+                    <Button className="w-full h-12 text-lg" size="lg">
+                        <UserPlus className="mr-2 h-6 w-6" />
+                        Add Customer
+                    </Button>
+                </Link>
+                <Link href="/install" passHref>
+                    <Button className="w-full h-12 text-lg" size="lg" variant="secondary">
+                        <QrCode className="mr-2 h-6 w-6" />
+                        Scan Device QR Code
+                    </Button>
+                </Link>
+            </div>
 
-        <div className="space-y-2 pt-4">
-            <ListItem icon={Users} title="Total Customers" value={stats.total} href="/customers" loading={loading} />
-            <ListItem icon={KeyRound} title="Balance Keys" value={stats.balance} href="/balance" loading={loading} />
-            <ListItem icon={UserCircle} title="User Profile" href="/onboarding" />
-            <ListItem icon={Youtube} title="Installation Video" href="#" />
-            <ListItem icon={Share2} title="Running Phone QR Code" href="#" />
-            <ListItem icon={Headset} title="Contact Support" href="#" />
+            <div className="space-y-2 pt-4">
+                <ListItem icon={Users} title="Total Customers" value={stats.total} href="/customers" loading={loading} />
+                <ListItem icon={KeyRound} title="Balance Keys" value={stats.balance} href="/balance" loading={loading} />
+                <ListItem icon={UserCircle} title="User Profile" href="/onboarding" />
+                <ListItem icon={Youtube} title="Installation Video" href="#" />
+                <ListItem icon={Share2} title="Running Phone QR Code" href="#" />
+                <ListItem icon={Headset} title="Contact Support" href="#" />
+            </div>
         </div>
-    </div>
+    </AppLayout>
   );
 }
+

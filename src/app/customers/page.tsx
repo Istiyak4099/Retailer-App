@@ -8,22 +8,19 @@ import { Loader2, PlusCircle } from "lucide-react";
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useEffect, useState } from "react";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { auth, db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { collection, query, getDocs } from "firebase/firestore";
 import { Customer } from "@/lib/types";
 
 export default function CustomersPage() {
-  const [user] = useAuthState(auth);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCustomers = async () => {
-      if (!user) return;
       setLoading(true);
       try {
-        const q = query(collection(db, "Customers"), where("uid", "==", user.uid));
+        const q = query(collection(db, "Customers"));
         const querySnapshot = await getDocs(q);
         const fetchedCustomers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
         setCustomers(fetchedCustomers);
@@ -35,7 +32,7 @@ export default function CustomersPage() {
     };
 
     fetchCustomers();
-  }, [user]);
+  }, []);
 
   return (
     <AppLayout title="Total Customers">

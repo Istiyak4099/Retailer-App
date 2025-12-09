@@ -12,8 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useEffect, useState, Suspense } from 'react';
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
 
 function titleCase(str: string) {
   if (!str) return '';
@@ -28,21 +26,14 @@ function titleCase(str: string) {
 function CustomersListPageContent() {
   const searchParams = useSearchParams();
   const status = searchParams.get('status');
-  const [user] = useAuthState(auth);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCustomers = async () => {
-      if (!user) {
-        if (auth.currentUser === null) {
-            setLoading(false);
-        }
-        return;
-      };
       setLoading(true);
       try {
-        let customerQuery = query(collection(db, 'Customers'), where("uid", "==", user.uid));
+        let customerQuery = query(collection(db, 'Customers'));
         
         if (status && status !== 'today') {
             customerQuery = query(customerQuery, where('status', '==', titleCase(status)));
@@ -78,7 +69,7 @@ function CustomersListPageContent() {
       }
     };
     fetchCustomers();
-  }, [status, user]);
+  }, [status]);
 
   let pageTitle = status ? `${titleCase(status)} Customers` : "All Customers";
   let pageDescription = status ? `A list of your customers with status: ${titleCase(status)}` : "Here's a list of all your EMI customers.";
