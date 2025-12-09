@@ -19,25 +19,30 @@ export default function Home() {
   useEffect(() => {
     const checkOnboarding = async () => {
       if (user) {
-        // Prevent re-running the check
         if (hasChecked.current) return;
         hasChecked.current = true;
 
-        const userDoc = await getDoc(doc(db, "Users", user.uid));
-        if (userDoc.exists()) {
-          router.replace('/dashboard');
-        } else {
-          router.replace('/onboarding');
+        try {
+            const userDoc = await getDoc(doc(db, "Users", user.uid));
+            if (userDoc.exists()) {
+              router.replace('/dashboard');
+            } else {
+              router.replace('/onboarding');
+            }
+        } catch (error) {
+            console.error("Error checking user onboarding status:", error);
+            // Fallback to onboarding if there's an error
+            router.replace('/onboarding');
         }
+
       }
     };
 
     if (!loading && !user) {
-        // If not loading and no user, we can safely reset for the next login attempt
         hasChecked.current = false;
     }
 
-    if (!loading) {
+    if (!loading && user) {
       checkOnboarding();
     }
   }, [user, loading, router]);
@@ -48,7 +53,7 @@ export default function Home() {
        <div className="flex h-screen w-full items-center justify-center bg-background p-4">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">{loading ? "Loading..." : "Redirecting..."}</p>
+          <p className="text-muted-foreground">{loading ? "Authenticating..." : "Redirecting..."}</p>
         </div>
       </div>
     );

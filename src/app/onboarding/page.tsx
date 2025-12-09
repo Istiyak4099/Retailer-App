@@ -83,10 +83,12 @@ export default function OnboardingPage() {
           });
           setIsNewUser(true);
         }
+      } else if (!loading) {
+        router.replace('/');
       }
     };
     fetchUserData();
-  }, [user, form]);
+  }, [user, form, loading, router]);
 
 
   async function onSubmit(values: FormData) {
@@ -104,11 +106,12 @@ export default function OnboardingPage() {
       await setDoc(doc(db, "Users", user.uid), userPayload, { merge: true });
 
       toast({
-        title: "Profile Updated",
+        title: "Profile Created",
         description: "Your information has been saved successfully.",
       });
       
-      setUserData({ ...userPayload, uid: user.uid });
+      const updatedUserData = await getDoc(doc(db, "Users", user.uid));
+      setUserData({ uid: user.uid, ...(updatedUserData.data() as Omit<User, 'uid'>) });
       setIsNewUser(false);
 
     } catch (error) {
@@ -121,7 +124,7 @@ export default function OnboardingPage() {
     }
   }
   
-  if (loading) {
+  if (loading || (!user && !isNewUser)) {
     return (
       <AppLayout title="Loading Profile...">
         <div className="flex justify-center items-center h-64">
