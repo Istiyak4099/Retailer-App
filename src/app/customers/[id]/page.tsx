@@ -82,10 +82,16 @@ export default function CustomerDetailPage() {
           if (!emiQuerySnapshot.empty) {
             const emiDoc = emiQuerySnapshot.docs[0];
             const emiData = emiDoc.data();
+            
+            // Check if created_time exists and is a Timestamp before converting
+            const createdTime = emiData.created_time && emiData.created_time.toDate 
+              ? emiData.created_time.toDate() 
+              : new Date();
+
             setEmiDetails({ 
               id: emiDoc.id, 
               ...emiData,
-              created_time: emiData.created_time.toDate()
+              created_time: createdTime
             } as EmiDetails);
           }
         } else {
@@ -168,6 +174,7 @@ export default function CustomerDetailPage() {
   };
 
   const getInitials = (name: string) => {
+    if (!name) return "";
     return name
       .split(" ")
       .map((n) => n[0])
@@ -204,7 +211,7 @@ export default function CustomerDetailPage() {
           <CardHeader className="bg-muted/30 p-4">
             <div className="flex items-center space-x-4">
               <Avatar className="h-16 w-16 text-xl">
-                <AvatarImage src={emiDetails?.live_photo || `https://api.pravatar.cc/150?u=${customer.id}`} />
+                <AvatarImage src={emiDetails?.live_photo || undefined} />
                 <AvatarFallback className="bg-primary text-primary-foreground">
                   {getInitials(customer.full_name)}
                 </AvatarFallback>
@@ -250,22 +257,28 @@ export default function CustomerDetailPage() {
 
             <Separator />
             
-            {emiDetails && (
+            {emiDetails && (emiDetails.nid_front || emiDetails.nid_back || emiDetails.live_photo) && (
               <>
                 <SectionTitle>Uploaded Documents</SectionTitle>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2 text-center">
-                        <Image src={emiDetails.nid_front} alt="NID Front" width={300} height={200} className="rounded-lg w-full object-contain h-40 border" data-ai-hint="document photo" />
-                        <p className="text-sm text-muted-foreground">NID Front</p>
-                    </div>
-                    <div className="space-y-2 text-center">
-                        <Image src={emiDetails.nid_back} alt="NID Back" width={300} height={200} className="rounded-lg w-full object-contain h-40 border" data-ai-hint="document photo" />
-                        <p className="text-sm text-muted-foreground">NID Back</p>
-                    </div>
-                    <div className="space-y-2 text-center">
-                        <Image src={emiDetails.live_photo} alt="Live Photo" width={300} height={200} className="rounded-lg w-full object-contain h-40 border" data-ai-hint="person selfie" />
-                        <p className="text-sm text-muted-foreground">Live Photo</p>
-                    </div>
+                    {emiDetails.nid_front && (
+                      <div className="space-y-2 text-center">
+                          <Image src={emiDetails.nid_front} alt="NID Front" width={300} height={200} className="rounded-lg w-full object-contain h-40 border" data-ai-hint="document photo" />
+                          <p className="text-sm text-muted-foreground">NID Front</p>
+                      </div>
+                    )}
+                    {emiDetails.nid_back && (
+                      <div className="space-y-2 text-center">
+                          <Image src={emiDetails.nid_back} alt="NID Back" width={300} height={200} className="rounded-lg w-full object-contain h-40 border" data-ai-hint="document photo" />
+                          <p className="text-sm text-muted-foreground">NID Back</p>
+                      </div>
+                    )}
+                    {emiDetails.live_photo && (
+                      <div className="space-y-2 text-center">
+                          <Image src={emiDetails.live_photo} alt="Live Photo" width={300} height={200} className="rounded-lg w-full object-contain h-40 border" data-ai-hint="person selfie" />
+                          <p className="text-sm text-muted-foreground">Live Photo</p>
+                      </div>
+                    )}
                 </div>
               </>
             )}
