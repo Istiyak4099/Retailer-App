@@ -29,8 +29,7 @@ import {
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { auth, db } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 
 const StatCard = ({ icon: Icon, title, value, iconColor, href, loading }: { icon: React.ElementType, title: string, value: string | number, iconColor?: string, href: string, loading?: boolean }) => (
@@ -86,13 +85,20 @@ export default function DashboardPage() {
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
-        const emiQuery = query(
-          collection(db, "EmiDetails"),
-          where("created_time", ">=", Timestamp.fromDate(today)),
-          where("created_time", "<", Timestamp.fromDate(tomorrow))
-        );
-        const emiSnapshot = await getDocs(emiQuery);
-        const todaysActivations = new Set(emiSnapshot.docs.map(doc => doc.data().customerId));
+        const customerIds = querySnapshot.docs.map(doc => doc.id);
+
+        let emiSnapshot;
+        if(customerIds.length > 0){
+          const emiQuery = query(
+            collection(db, "EmiDetails"),
+            where("customerId", "in", customerIds),
+            where("created_time", ">=", Timestamp.fromDate(today)),
+            where("created_time", "<", Timestamp.fromDate(tomorrow))
+          );
+          emiSnapshot = await getDocs(emiQuery);
+        }
+        
+        const todaysActivations = new Set(emiSnapshot ? emiSnapshot.docs.map(doc => doc.data().customerId) : []);
         
         let active = 0, pending = 0, locked = 0, unlocked = 0, removed = 0, total = 0;
 
@@ -108,7 +114,6 @@ export default function DashboardPage() {
             }
         });
 
-        const customerIds = querySnapshot.docs.map(doc => doc.id);
         const userTodaysActivations = [...todaysActivations].filter(id => customerIds.includes(id)).length;
         
         const balance = 0; 
@@ -186,4 +191,3 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
-
