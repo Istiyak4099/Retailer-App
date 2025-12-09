@@ -24,6 +24,7 @@ import {
   Share2,
   Headset,
   Users,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/firebase";
@@ -89,6 +90,10 @@ export function AppLayout({
             <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-primary px-4 text-primary-foreground sm:px-6">
                 <div className="flex items-center gap-2">
                     <SidebarTrigger className="text-primary-foreground hover:text-primary-foreground hover:bg-primary/80" />
+                     <Button variant="ghost" size="icon" className="rounded-full text-primary-foreground hover:text-primary-foreground hover:bg-primary/80" onClick={() => router.back()}>
+                        <ArrowLeft className="h-5 w-5" />
+                        <span className="sr-only">Back</span>
+                    </Button>
                     <h1 className="text-xl font-bold md:text-2xl">
                         {title}
                     </h1>
