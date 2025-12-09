@@ -25,12 +25,12 @@ import { addDoc, collection } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
-  full_name: z.string().min(2, "Full name is required"),
-  mobile_number: z.string().regex(/^\d{11}$/, "Invalid 11-digit mobile number"),
+  full_name: z.string().optional(),
+  mobile_number: z.string().optional(),
   email_address: z.string().email("Invalid email address").optional().or(z.literal('')),
-  phone_model: z.string().min(2, "Phone model is required"),
-  imei_1: z.string().min(15, "IMEI must be 15 digits").max(15, "IMEI must be 15 digits"),
-  imei_2: z.string().min(15, "IMEI must be 15 digits").max(15, "IMEI must be 15 digits").optional().or(z.literal('')),
+  phone_model: z.string().optional(),
+  imei_1: z.string().optional(),
+  imei_2: z.string().optional(),
 });
 
 export default function NewCustomerPage() {

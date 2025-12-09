@@ -26,20 +26,18 @@ import { addDoc, collection, doc, serverTimestamp, updateDoc } from "firebase/fi
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { v4 as uuidv4 } from 'uuid';
 
-const fileSchema = typeof window === 'undefined'
-  ? z.any()
-  : z.instanceof(FileList).refine(files => files?.length === 1, "File is required.");
+const fileSchema = z.any();
 
 const formSchema = z.object({
-  product_name: z.string().min(2, "Product name is required"),
-  price: z.coerce.number().positive("Price must be positive"),
-  processing_fee: z.coerce.number().min(0, "Cannot be negative"),
-  down_payment: z.coerce.number().min(0, "Cannot be negative"),
-  number_of_emi: z.coerce.number().int().min(1, "At least 1 EMI"),
-  emi_monthly_amount: z.coerce.number().positive("Amount must be positive"),
-  nid_front: fileSchema.refine(files => files?.length === 1, "NID Front is required."),
-  nid_back: fileSchema.refine(files => files?.length === 1, "NID Back is required."),
-  live_photo: fileSchema.refine(files => files?.length === 1, "Live Photo is required."),
+  product_name: z.string().optional(),
+  price: z.coerce.number().optional(),
+  processing_fee: z.coerce.number().optional(),
+  down_payment: z.coerce.number().optional(),
+  number_of_emi: z.coerce.number().int().optional(),
+  emi_monthly_amount: z.coerce.number().optional(),
+  nid_front: fileSchema.optional(),
+  nid_back: fileSchema.optional(),
+  live_photo: fileSchema.optional(),
 });
 
 export default function NewEmiPage() {
@@ -66,8 +64,9 @@ export default function NewEmiPage() {
     },
   });
 
-  const uploadFile = async (file: File) => {
-    if (!file) return null;
+  const uploadFile = async (fileList: FileList | undefined) => {
+    if (!fileList || fileList.length === 0) return null;
+    const file = fileList[0];
     const storageRef = ref(storage, `images/${uuidv4()}-${file.name}`);
     await uploadBytes(storageRef, file);
     return await getDownloadURL(storageRef);
@@ -76,23 +75,22 @@ export default function NewEmiPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       const [nidFrontUrl, nidBackUrl, livePhotoUrl] = await Promise.all([
-        uploadFile(values.nid_front[0]),
-        uploadFile(values.nid_back[0]),
-        uploadFile(values.live_photo[0])
+        uploadFile(values.nid_front),
+        uploadFile(values.nid_back),
+        uploadFile(values.live_photo)
       ]);
 
-      if (!nidFrontUrl || !nidBackUrl || !livePhotoUrl) {
-        throw new Error("One or more file uploads failed.");
-      }
-
-      const total_emi = values.price - values.down_payment + values.processing_fee;
+      const price = values.price || 0;
+      const down_payment = values.down_payment || 0;
+      const processing_fee = values.processing_fee || 0;
+      const total_emi = price - down_payment + processing_fee;
 
       await addDoc(collection(db, "EmiDetails"), {
         customerId: id,
         product_name: values.product_name,
-        price: values.price,
-        processing_fee: values.processing_fee,
-        down_payment: values.down_payment,
+        price: price,
+        processing_fee: processing_fee,
+        down_payment: down_payment,
         number_of_emi: values.number_of_emi,
         emi_monthly_amount: values.emi_monthly_amount,
         total_emi: total_emi,
