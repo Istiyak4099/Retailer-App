@@ -24,6 +24,7 @@ import {
   Loader2,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
@@ -314,7 +315,9 @@ export default function CustomerDetailPage() {
               className="w-full col-span-2 lg:col-span-1"
             />
             <Button variant="outline" className="w-full"><BellRing className="mr-2 h-4 w-4" />Send Reminder</Button>
-            <Button variant="outline" className="w-full"><MapPin className="mr-2 h-4 w-4" />Track Location</Button>
+            <Link href={`/customers/${id}/location`} passHref>
+              <Button variant="outline" className="w-full"><MapPin className="mr-2 h-4 w-4" />Track Location</Button>
+            </Link>
         </div>
       </div>
     </AppLayout>

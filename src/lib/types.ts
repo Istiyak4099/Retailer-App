@@ -19,6 +19,9 @@ export interface Customer {
   imei_2: string;
   uid?: string;
   status: "active" | "locked" | "completed" | "pending" | "unlocked" | "removed";
+  latitude?: number;
+  longitude?: number;
+  last_location_update?: any; // Firestore Timestamp
 }
 
 export interface EmiDetails {
