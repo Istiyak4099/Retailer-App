@@ -1,13 +1,9 @@
+
 "use client"
 
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-} from "@/components/ui/carousel";
 import {
   KeyRound,
   UserPlus,
@@ -131,48 +127,28 @@ export default function DashboardPage() {
   return (
     <AppLayout title="Dashboard">
         <div className="space-y-4">
-            <Carousel
-            opts={{
-                align: "start",
-                dragFree: true,
-            }}
-            className="w-full"
-            >
-            <CarouselContent>
-                <CarouselItem className="basis-auto">
-                <StatCard icon={CheckCircle} title="Today's Activation" value={stats.today} iconColor="text-blue-500" href="/customers/list?status=today" loading={loading} />
-                </CarouselItem>
-                <CarouselItem className="basis-auto">
-                <StatCard icon={Users} title="Active Devices" value={stats.active} href="/customers/list?status=active" loading={loading} />
-                </CarouselItem>
-                <CarouselItem className="basis-auto">
-                <StatCard icon={KeyRound} title="Balance Keys" value={stats.balance} href="/balance" loading={loading} />
-                </CarouselItem>
-                <CarouselItem className="basis-auto">
-                <StatCard icon={Hourglass} title="Pending Devices" value={stats.pending} iconColor="text-orange-500" href="/customers/list?status=pending" loading={loading} />
-                </CarouselItem>
-                <CarouselItem className="basis-auto">
-                <StatCard icon={Lock} title="Locked Devices" value={stats.locked} iconColor="text-red-500" href="/customers/list?status=locked" loading={loading} />
-                </CarouselItem>
-                <CarouselItem className="basis-auto">
-                <StatCard icon={Unlock} title="Unlocked Devices" value={stats.unlocked} iconColor="text-green-500" href="/customers/list?status=unlocked" loading={loading} />
-                </CarouselItem>
-                <CarouselItem className="basis-auto">
-                <StatCard icon={Trash2} title="Removed Devices" value={stats.removed} href="/customers/list?status=removed" loading={loading} />
-                </CarouselItem>
-            </CarouselContent>
-            </Carousel>
+            <div className="w-full overflow-x-auto pb-2 -mx-1 px-1">
+                <div className="flex space-x-4">
+                    <StatCard icon={CheckCircle} title="Today's Activation" value={stats.today} iconColor="text-blue-500" href="/customers/list?status=today" loading={loading} />
+                    <StatCard icon={Users} title="Active Devices" value={stats.active} href="/customers/list?status=active" loading={loading} />
+                    <StatCard icon={KeyRound} title="Balance Keys" value={stats.balance} href="/balance" loading={loading} />
+                    <StatCard icon={Hourglass} title="Pending Devices" value={stats.pending} iconColor="text-orange-500" href="/customers/list?status=pending" loading={loading} />
+                    <StatCard icon={Lock} title="Locked Devices" value={stats.locked} iconColor="text-red-500" href="/customers/list?status=locked" loading={loading} />
+                    <StatCard icon={Unlock} title="Unlocked Devices" value={stats.unlocked} iconColor="text-green-500" href="/customers/list?status=unlocked" loading={loading} />
+                    <StatCard icon={Trash2} title="Removed Devices" value={stats.removed} href="/customers/list?status=removed" loading={loading} />
+                </div>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Link href="/customers/new" passHref>
-                    <Button className="w-full h-12 text-lg" size="lg">
-                        <UserPlus className="mr-2 h-6 w-6" />
+                    <Button className="w-full" size="lg">
+                        <UserPlus className="mr-2 h-5 w-5" />
                         Add Customer
                     </Button>
                 </Link>
                 <Link href="/install" passHref>
-                    <Button className="w-full h-12 text-lg" size="lg" variant="secondary">
-                        <QrCode className="mr-2 h-6 w-6" />
+                    <Button className="w-full" size="lg" variant="secondary">
+                        <QrCode className="mr-2 h-5 w-5" />
                         Scan Device QR Code
                     </Button>
                 </Link>
