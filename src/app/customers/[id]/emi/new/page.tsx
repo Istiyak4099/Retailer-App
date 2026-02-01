@@ -19,10 +19,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { useRouter, useParams } from "next/navigation";
 import { CheckCircle, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { db, storage } from "@/lib/firebase";
-import { addDoc, collection, doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -30,6 +30,7 @@ const fileSchema = z.any();
 
 const formSchema = z.object({
   product_name: z.string().optional(),
+  android_id: z.string().optional(),
   price: z.coerce.number().optional(),
   processing_fee: z.coerce.number().optional(),
   down_payment: z.coerce.number().optional(),
@@ -53,6 +54,7 @@ export default function NewEmiPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       product_name: "",
+      android_id: "",
       price: 0,
       processing_fee: 0,
       down_payment: 0,
@@ -63,6 +65,25 @@ export default function NewEmiPage() {
       live_photo: undefined,
     },
   });
+
+  useEffect(() => {
+    if (!id) return;
+    const fetchCustomer = async () => {
+      try {
+        const customerDocRef = doc(db, "Customers", id);
+        const customerDoc = await getDoc(customerDocRef);
+        if (customerDoc.exists()) {
+          const customerData = customerDoc.data();
+          if (customerData.android_id) {
+            form.setValue('android_id', customerData.android_id);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching customer data for android_id", error);
+      }
+    };
+    fetchCustomer();
+  }, [id, form]);
 
   const uploadFile = async (fileList: FileList | undefined) => {
     if (!fileList || fileList.length === 0) return null;
@@ -102,7 +123,8 @@ export default function NewEmiPage() {
       
       const customerDocRef = doc(db, "Customers", id);
       await updateDoc(customerDocRef, {
-        status: "active"
+        status: "active",
+        android_id: values.android_id
       });
 
       toast({
@@ -141,19 +163,35 @@ export default function NewEmiPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="product_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Product Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. iPhone 15 Pro" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <FormField
+                  control={form.control}
+                  name="product_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Product Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. iPhone 15 Pro" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="android_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Android ID</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Device's Android ID" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+             
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -254,7 +292,7 @@ export default function NewEmiPage() {
                       )}
                       <FormControl>
                          <Input type="file" {...rest} onChange={(e) => {
-                            onChange(e.target.files);
+                            onChange(e.g.target.files);
                             handleFileChange(e, setNidBackPreview);
                          }} />
                       </FormControl>
