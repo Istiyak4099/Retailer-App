@@ -56,7 +56,6 @@ export function CustomerTable({ customers }: CustomerTableProps) {
       <TableHeader>
         <TableRow>
           <TableHead>Customer</TableHead>
-          <TableHead className="hidden md:table-cell">Phone Model</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>
             <span className="sr-only">Actions</span>
@@ -72,9 +71,6 @@ export function CustomerTable({ customers }: CustomerTableProps) {
                 <div className="text-sm text-muted-foreground">
                   {customer.mobile_number}
                 </div>
-              </TableCell>
-              <TableCell className="hidden md:table-cell">
-                {customer.phone_model}
               </TableCell>
               <TableCell>
                 <Badge variant={getStatusVariant(customer.status)}>
@@ -107,7 +103,7 @@ export function CustomerTable({ customers }: CustomerTableProps) {
           ))
         ) : (
           <TableRow>
-            <TableCell colSpan={4} className="text-center text-muted-foreground">
+            <TableCell colSpan={3} className="text-center text-muted-foreground">
               No customers found.
             </TableCell>
           </TableRow>

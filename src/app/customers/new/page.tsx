@@ -27,9 +27,7 @@ const formSchema = z.object({
   full_name: z.string().optional(),
   mobile_number: z.string().optional(),
   email_address: z.string().email("Invalid email address").optional().or(z.literal('')),
-  phone_model: z.string().optional(),
-  imei_1: z.string().optional(),
-  imei_2: z.string().optional(),
+  android_id: z.string().optional(),
 });
 
 export default function NewCustomerPage() {
@@ -42,9 +40,7 @@ export default function NewCustomerPage() {
       full_name: "",
       mobile_number: "",
       email_address: "",
-      phone_model: "",
-      imei_1: "",
-      imei_2: "",
+      android_id: "",
     },
   });
 
@@ -117,45 +113,17 @@ export default function NewCustomerPage() {
               </div>
               <FormField
                 control={form.control}
-                name="phone_model"
+                name="android_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Model</FormLabel>
+                    <FormLabel>Android ID</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Samsung Galaxy S24" {...field} />
+                      <Input placeholder="Device's Android ID" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="imei_1"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>IMEI 1</FormLabel>
-                      <FormControl>
-                        <Input placeholder="15-digit IMEI number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="imei_2"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>IMEI 2 (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="15-digit IMEI number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
               <div className="flex justify-end">
                  <Button type="submit" disabled={form.formState.isSubmitting}>
                   {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
