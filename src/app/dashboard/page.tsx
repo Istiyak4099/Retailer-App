@@ -1,4 +1,3 @@
-
 "use client"
 
 import { AppLayout } from "@/components/app-layout";
@@ -26,10 +25,11 @@ import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 
 const StatCard = ({ icon: Icon, title, value, iconColor, href, loading }: { icon: React.ElementType, title: string, value: string | number, iconColor?: string, href: string, loading?: boolean }) => (
-    <Link href={href} passHref>
-      <Card className="text-center shadow-md flex-shrink-0 w-[140px] h-full hover:bg-muted/50 transition-colors">
+    <Link href={href} passHref className="h-full">
+      <Card className="text-center shadow-md h-full hover:bg-muted/50 transition-colors">
           <CardContent className="p-4 flex flex-col items-center justify-center h-full">
               <Icon className={cn("mx-auto h-8 w-8 text-primary mb-2", iconColor)} />
               {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <p className="text-2xl font-bold">{value}</p>}
@@ -124,30 +124,44 @@ export default function DashboardPage() {
     fetchStats();
   }, []);
 
+  const statCards = [
+    { icon: CheckCircle, title: "Today's Activation", value: stats.today, iconColor: "text-blue-500", href: "/customers/list?status=today" },
+    { icon: Users, title: "Active Devices", value: stats.active, href: "/customers/list?status=active" },
+    { icon: KeyRound, title: "Balance Keys", value: stats.balance, href: "/balance" },
+    { icon: Hourglass, title: "Pending Devices", value: stats.pending, iconColor: "text-orange-500", href: "/customers/list?status=pending" },
+    { icon: Lock, title: "Locked Devices", value: stats.locked, iconColor: "text-red-500", href: "/customers/list?status=locked" },
+    { icon: Unlock, title: "Unlocked Devices", value: stats.unlocked, iconColor: "text-green-500", href: "/customers/list?status=unlocked" },
+    { icon: Trash2, title: "Removed Devices", value: stats.removed, href: "/customers/list?status=removed" },
+  ];
+
   return (
     <AppLayout title="Dashboard">
         <div className="space-y-4">
-            <div className="w-full overflow-x-auto pb-2 -mx-1 px-1">
-                <div className="flex space-x-4">
-                    <StatCard icon={CheckCircle} title="Today's Activation" value={stats.today} iconColor="text-blue-500" href="/customers/list?status=today" loading={loading} />
-                    <StatCard icon={Users} title="Active Devices" value={stats.active} href="/customers/list?status=active" loading={loading} />
-                    <StatCard icon={KeyRound} title="Balance Keys" value={stats.balance} href="/balance" loading={loading} />
-                    <StatCard icon={Hourglass} title="Pending Devices" value={stats.pending} iconColor="text-orange-500" href="/customers/list?status=pending" loading={loading} />
-                    <StatCard icon={Lock} title="Locked Devices" value={stats.locked} iconColor="text-red-500" href="/customers/list?status=locked" loading={loading} />
-                    <StatCard icon={Unlock} title="Unlocked Devices" value={stats.unlocked} iconColor="text-green-500" href="/customers/list?status=unlocked" loading={loading} />
-                    <StatCard icon={Trash2} title="Removed Devices" value={stats.removed} href="/customers/list?status=removed" loading={loading} />
-                </div>
-            </div>
+            <Carousel
+                opts={{
+                    align: "start",
+                    dragFree: true,
+                }}
+                className="w-full"
+            >
+                <CarouselContent className="-ml-2">
+                    {statCards.map((card, index) => (
+                        <CarouselItem key={index} className="pl-2 basis-1/3 sm:basis-1/4 md:basis-1/5 lg:basis-1/6 xl:basis-[14%]">
+                           <StatCard {...card} loading={loading} />
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+            </Carousel>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link href="/customers/new" passHref>
-                    <Button className="w-full" size="lg">
+                    <Button className="w-full">
                         <UserPlus className="mr-2 h-5 w-5" />
                         Add Customer
                     </Button>
                 </Link>
                 <Link href="/install" passHref>
-                    <Button className="w-full" size="lg" variant="secondary">
+                    <Button className="w-full" variant="secondary">
                         <QrCode className="mr-2 h-5 w-5" />
                         Scan Device QR Code
                     </Button>
