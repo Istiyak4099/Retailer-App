@@ -28,6 +28,7 @@ const formSchema = z.object({
   mobile_number: z.string().optional(),
   email_address: z.string().email("Invalid email address").optional().or(z.literal('')),
   android_id: z.string().optional(),
+  address: z.string().optional(),
 });
 
 export default function NewCustomerPage() {
@@ -41,6 +42,7 @@ export default function NewCustomerPage() {
       mobile_number: "",
       email_address: "",
       android_id: "",
+      address: "",
     },
   });
 
@@ -111,6 +113,19 @@ export default function NewCustomerPage() {
                   )}
                 />
               </div>
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Customer's full address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="android_id"

@@ -238,18 +238,18 @@ export default function CustomerDetailPage() {
               <InfoRow label="Android ID" value={emiDetails?.android_id || customer.android_id} />
 
               <SectionTitle>Loan Information</SectionTitle>
-              <InfoRow label="Product Price" value={emiDetails?.price ? `₹${emiDetails.price.toLocaleString()}`: 'N/A'} />
-              <InfoRow label="Processing Fee" value={emiDetails?.processing_fee ? `₹${emiDetails.processing_fee.toLocaleString()}` : 'N/A'} />
-              <InfoRow label="Down Payment" value={emiDetails?.down_payment ? `₹${emiDetails.down_payment.toLocaleString()}` : 'N/A'} />
-              <InfoRow label="Total EMI" value={emiDetails?.total_emi ? `₹${emiDetails.total_emi.toLocaleString()}` : 'N/A'} />
-              <InfoRow label="Monthly EMI" value={emiDetails?.emi_monthly_amount ? `₹${emiDetails.emi_monthly_amount.toLocaleString()}` : 'N/A'} />
+              <InfoRow label="Product Price" value={emiDetails?.price ? `₹${"emiDetails.price.toLocaleString()"}`: 'N/A'} />
+              <InfoRow label="Processing Fee" value={emiDetails?.processing_fee ? `₹${"emiDetails.processing_fee.toLocaleString()"}` : 'N/A'} />
+              <InfoRow label="Down Payment" value={emiDetails?.down_payment ? `₹${"emiDetails.down_payment.toLocaleString()"}` : 'N/A'} />
+              <InfoRow label="Total EMI" value={emiDetails?.total_emi ? `₹${"emiDetails.total_emi.toLocaleString()"}` : 'N/A'} />
+              <InfoRow label="Monthly EMI" value={emiDetails?.emi_monthly_amount ? `₹${"emiDetails.emi_monthly_amount.toLocaleString()"}` : 'N/A'} />
               <InfoRow label="Number of EMIs" value={emiDetails?.number_of_emi} />
               <InfoRow label="Loan ID" value={emiDetails?.id} />
               <InfoRow label="Activation Date" value={emiDetails?.created_time ? format(emiDetails.created_time, 'PP') : 'N/A'} />
 
 
               <SectionTitle>Personal Information</SectionTitle>
-              <InfoRow label="Address" value={"N/A"} />
+              <InfoRow label="Address" value={customer.address} />
               <InfoRow label="Mobile Number" value={customer.mobile_number} />
               <InfoRow label="Email" value={customer.email_address} />
             </dl>

@@ -15,6 +15,7 @@ export interface Customer {
   mobile_number: string;
   email_address: string;
   android_id?: string;
+  address?: string;
   uid?: string;
   status: "active" | "locked" | "completed" | "pending" | "unlocked" | "removed";
   latitude?: number;
