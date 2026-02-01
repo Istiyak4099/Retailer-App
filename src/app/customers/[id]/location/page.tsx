@@ -46,7 +46,7 @@ export default function CustomerLocationPage() {
 
   if (loading) {
     return (
-      <AppLayout title="Tracking Location...">
+      <AppLayout title="Location Tracking">
         <div className="flex justify-center items-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -56,7 +56,7 @@ export default function CustomerLocationPage() {
 
   if (!customer || customer.latitude === undefined || customer.longitude === undefined) {
     return (
-      <AppLayout title="Location Not Available">
+      <AppLayout title="Location Tracking">
         <Card className="max-w-2xl mx-auto shadow-lg rounded-xl">
           <CardHeader>
             <CardTitle>Location Not Available</CardTitle>
@@ -79,7 +79,7 @@ export default function CustomerLocationPage() {
   const mapSrc = `https://maps.google.com/maps?q=${customer.latitude},${customer.longitude}&hl=en&z=16&output=embed`;
 
   return (
-    <AppLayout title={`Location for ${customer.full_name}`}>
+    <AppLayout title="Location Tracking">
       <div className="max-w-4xl mx-auto">
         <Card className="shadow-lg rounded-xl overflow-hidden">
           <CardHeader>
