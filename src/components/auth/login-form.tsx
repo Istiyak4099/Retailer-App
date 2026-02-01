@@ -11,11 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { auth } from "@/lib/firebase";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -46,36 +42,17 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({
-  prompt: 'select_account'
-});
 
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
 
   const handleLogin = async () => {
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      const userDocRef = doc(db, "Users", user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        router.push("/dashboard");
-      } else {
-        router.push("/onboarding");
-      }
-    } catch (error) {
-      console.error("Error during sign-in:", error);
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: "Could not sign in with Google. Please try again.",
-      });
-    }
+    toast({
+      title: "Authentication Disabled",
+      description: "Please navigate to the dashboard directly.",
+    });
+    router.push("/dashboard");
   };
 
   return (
@@ -83,13 +60,13 @@ export function LoginForm() {
       <CardHeader>
         <CardTitle className="text-xl font-headline">Retailer EMI Assist</CardTitle>
         <CardDescription>
-          Please sign in using your Google account to continue.
+          Authentication is currently disabled. Please proceed to the dashboard.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Button onClick={handleLogin} className="w-full bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-sm">
           <GoogleIcon className="mr-2 h-5 w-5" />
-          Sign in with Google
+          Proceed to Dashboard
         </Button>
       </CardContent>
       <CardFooter>

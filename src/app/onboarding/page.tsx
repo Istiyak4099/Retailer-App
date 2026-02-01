@@ -17,10 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { auth, db } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { useRouter } from "next/navigation";
 import { Building, Loader2, Mail, MapPin, Phone, User as UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { User } from "@/lib/types";
@@ -46,13 +44,14 @@ const InfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label:
     </div>
 );
 
+// Using a static ID since authentication is disabled
+const staticUserId = "default-user";
 
 export default function OnboardingPage() {
   const { toast } = useToast();
-  const [user, loading] = useAuthState(auth);
-  const router = useRouter();
   const [userData, setUserData] = useState<User | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -66,52 +65,45 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (user) {
-        const userDocRef = doc(db, "Users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          const fetchedData = userDoc.data() as Omit<User, 'uid'>;
-          setUserData({ ...fetchedData, uid: user.uid });
-          form.reset(fetchedData);
-          setIsNewUser(false);
-        } else {
-           form.reset({
-            shop_owner_name: user.displayName || "",
-            mobile_number: "",
-            shop_name: "",
-            shop_address: ""
-          });
-          setIsNewUser(true);
-        }
-      } else if (!loading) {
-        router.replace('/');
+      setLoading(true);
+      const userDocRef = doc(db, "Users", staticUserId);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const fetchedData = userDoc.data() as Omit<User, 'uid'>;
+        setUserData({ ...fetchedData, uid: staticUserId });
+        form.reset(fetchedData);
+        setIsNewUser(false);
+      } else {
+         form.reset({
+          shop_owner_name: "Test User",
+          mobile_number: "",
+          shop_name: "",
+          shop_address: ""
+        });
+        setIsNewUser(true);
       }
+      setLoading(false);
     };
     fetchUserData();
-  }, [user, form, loading, router]);
+  }, [form]);
 
 
   async function onSubmit(values: FormData) {
-    if (!user) {
-        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in." });
-        return;
-    }
-
     try {
       const userPayload = {
         ...values,
-        email_address: user.email,
+        email_address: "testuser@example.com", // Using a dummy email
       };
 
-      await setDoc(doc(db, "Users", user.uid), userPayload, { merge: true });
+      await setDoc(doc(db, "Users", staticUserId), userPayload, { merge: true });
 
       toast({
         title: "Profile Created",
         description: "Your information has been saved successfully.",
       });
       
-      const updatedUserData = await getDoc(doc(db, "Users", user.uid));
-      setUserData({ uid: user.uid, ...(updatedUserData.data() as Omit<User, 'uid'>) });
+      const updatedUserData = await getDoc(doc(db, "Users", staticUserId));
+      setUserData({ uid: staticUserId, ...(updatedUserData.data() as Omit<User, 'uid'>) });
       setIsNewUser(false);
 
     } catch (error) {
@@ -124,7 +116,7 @@ export default function OnboardingPage() {
     }
   }
   
-  if (loading || (!user && !isNewUser)) {
+  if (loading) {
     return (
       <AppLayout title="Loading Profile...">
         <div className="flex justify-center items-center h-64">
@@ -178,7 +170,7 @@ export default function OnboardingPage() {
                 <FormItem>
                     <FormLabel>Email Address</FormLabel>
                     <FormControl>
-                        <Input type="email" value={user?.email || ""} disabled />
+                        <Input type="email" value="testuser@example.com" disabled />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -228,7 +220,7 @@ export default function OnboardingPage() {
         <Card className="shadow-lg rounded-xl">
             <CardHeader className="flex flex-row items-center gap-4">
                 <Avatar className="h-16 w-16">
-                    <AvatarImage src={user?.photoURL || undefined} alt="User Profile" />
+                    <AvatarImage src={undefined} alt="User Profile" />
                     <AvatarFallback>
                         <UserIcon className="h-8 w-8" />
                     </AvatarFallback>

@@ -1,6 +1,6 @@
 
 export interface User {
-  uid: string;
+  uid?: string;
   shop_owner_name: string;
   mobile_number: string;
   email_address: string;
@@ -17,7 +17,7 @@ export interface Customer {
   phone_model: string;
   imei_1: string;
   imei_2: string;
-  uid: string;
+  uid?: string;
   status: "Active" | "Locked" | "Completed" | "Pending" | "Unlocked" | "Removed";
 }
 

@@ -3,28 +3,19 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
 
 export default function Home() {
   const router = useRouter();
-  const [user, loading] = useAuthState(auth);
 
   useEffect(() => {
-    if (!loading) {
-      if (user) {
-        router.replace('/dashboard');
-      } else {
-        router.replace('/login');
-      }
-    }
-  }, [user, loading, router]);
+    router.replace('/dashboard');
+  }, [router]);
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background p-4">
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">Redirecting to dashboard...</p>
       </div>
     </div>
   );

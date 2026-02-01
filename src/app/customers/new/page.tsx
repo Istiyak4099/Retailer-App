@@ -19,8 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2 } from "lucide-react";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { auth, db } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { addDoc, collection } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
@@ -35,7 +34,6 @@ const formSchema = z.object({
 
 export default function NewCustomerPage() {
   const router = useRouter();
-  const [user] = useAuthState(auth);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -51,15 +49,9 @@ export default function NewCustomerPage() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
-      toast({ variant: "destructive", title: "Not Authenticated", description: "You need to be logged in to add a customer." });
-      return;
-    }
-
     try {
       const docRef = await addDoc(collection(db, "Customers"), {
         ...values,
-        uid: user.uid,
         status: "Pending",
       });
       toast({ title: "Customer Added", description: "Step 1 completed successfully." });
