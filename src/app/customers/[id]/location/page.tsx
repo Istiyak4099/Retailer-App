@@ -84,9 +84,6 @@ export default function CustomerLocationPage() {
         <Card className="shadow-lg rounded-xl overflow-hidden">
           <CardHeader>
             <CardTitle>Device Location</CardTitle>
-            <CardDescription>
-              Last known location for {customer.full_name}.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="aspect-video w-full rounded-lg overflow-hidden border">
