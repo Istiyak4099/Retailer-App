@@ -52,7 +52,7 @@ export default function NewCustomerPage() {
     try {
       const docRef = await addDoc(collection(db, "Customers"), {
         ...values,
-        status: "Pending",
+        status: "pending",
       });
       toast({ title: "Customer Added", description: "Step 1 completed successfully." });
       router.push(`/customers/${docRef.id}/emi/new`);

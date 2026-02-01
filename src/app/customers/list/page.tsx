@@ -36,7 +36,7 @@ function CustomersListPageContent() {
         let customerQuery = query(collection(db, 'Customers'));
         
         if (status && status !== 'today') {
-            customerQuery = query(customerQuery, where('status', '==', titleCase(status)));
+            customerQuery = query(customerQuery, where('status', '==', status));
         }
         
         const querySnapshot = await getDocs(customerQuery);

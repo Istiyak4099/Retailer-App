@@ -33,14 +33,14 @@ export function CustomerTable({ customers }: CustomerTableProps) {
     status: Customer['status']
   ): "default" | "destructive" | "secondary" => {
     switch (status) {
-      case "Active":
-      case "Unlocked":
+      case "active":
+      case "unlocked":
         return "default";
-      case "Locked":
+      case "locked":
         return "destructive";
-      case "Completed":
-      case "Pending":
-      case "Removed":
+      case "completed":
+      case "pending":
+      case "removed":
         return "secondary";
       default:
         return "default";

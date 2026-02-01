@@ -106,11 +106,11 @@ export default function DashboardPage() {
             const customer = doc.data();
             total++;
             switch(customer.status) {
-                case 'Active': active++; break;
-                case 'Pending': pending++; break;
-                case 'Locked': locked++; break;
-                case 'Unlocked': unlocked++; break;
-                case 'Removed': removed++; break;
+                case 'active': active++; break;
+                case 'pending': pending++; break;
+                case 'locked': locked++; break;
+                case 'unlocked': unlocked++; break;
+                case 'removed': removed++; break;
             }
         });
 
@@ -144,22 +144,22 @@ export default function DashboardPage() {
                 <StatCard icon={CheckCircle} title="Today's Activation" value={stats.today} iconColor="text-blue-500" href="/customers/list?status=today" loading={loading} />
                 </CarouselItem>
                 <CarouselItem className="basis-auto">
-                <StatCard icon={Users} title="Active Devices" value={stats.active} href="/customers/list?status=Active" loading={loading} />
+                <StatCard icon={Users} title="Active Devices" value={stats.active} href="/customers/list?status=active" loading={loading} />
                 </CarouselItem>
                 <CarouselItem className="basis-auto">
                 <StatCard icon={KeyRound} title="Balance Keys" value={stats.balance} href="/balance" loading={loading} />
                 </CarouselItem>
                 <CarouselItem className="basis-auto">
-                <StatCard icon={Hourglass} title="Pending Devices" value={stats.pending} iconColor="text-orange-500" href="/customers/list?status=Pending" loading={loading} />
+                <StatCard icon={Hourglass} title="Pending Devices" value={stats.pending} iconColor="text-orange-500" href="/customers/list?status=pending" loading={loading} />
                 </CarouselItem>
                 <CarouselItem className="basis-auto">
-                <StatCard icon={Lock} title="Locked Devices" value={stats.locked} iconColor="text-red-500" href="/customers/list?status=Locked" loading={loading} />
+                <StatCard icon={Lock} title="Locked Devices" value={stats.locked} iconColor="text-red-500" href="/customers/list?status=locked" loading={loading} />
                 </CarouselItem>
                 <CarouselItem className="basis-auto">
-                <StatCard icon={Unlock} title="Unlocked Devices" value={stats.unlocked} iconColor="text-green-500" href="/customers/list?status=Unlocked" loading={loading} />
+                <StatCard icon={Unlock} title="Unlocked Devices" value={stats.unlocked} iconColor="text-green-500" href="/customers/list?status=unlocked" loading={loading} />
                 </CarouselItem>
                 <CarouselItem className="basis-auto">
-                <StatCard icon={Trash2} title="Removed Devices" value={stats.removed} href="/customers/list?status=Removed" loading={loading} />
+                <StatCard icon={Trash2} title="Removed Devices" value={stats.removed} href="/customers/list?status=removed" loading={loading} />
                 </CarouselItem>
             </CarouselContent>
             </Carousel>

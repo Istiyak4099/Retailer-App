@@ -116,17 +116,17 @@ export default function CustomerDetailPage() {
         setCustomer(prev => prev ? { ...prev, status: newStatus } : null);
         
         let toastMessage = `Customer status changed to ${newStatus}.`;
-        if (newStatus === 'Locked') toastMessage = 'Device locked successfully.';
-        else if (newStatus === 'Unlocked') toastMessage = 'Device unlocked successfully.';
-        else if (newStatus === 'Removed') toastMessage = 'Customer removed successfully.';
+        if (newStatus === 'locked') toastMessage = 'Device locked successfully.';
+        else if (newStatus === 'unlocked') toastMessage = 'Device unlocked successfully.';
+        else if (newStatus === 'removed') toastMessage = 'Customer removed successfully.';
 
         toast({
             title: "Status Updated",
             description: toastMessage,
         });
 
-        if (newStatus === "Removed") {
-            router.push('/customers/list?status=Removed');
+        if (newStatus === "removed") {
+            router.push('/customers/list?status=removed');
         }
     } catch (error) {
         console.error("Error updating status:", error);
@@ -159,14 +159,14 @@ export default function CustomerDetailPage() {
     status: Customer['status']
   ): "default" | "destructive" | "secondary" => {
     switch (status) {
-      case "Active":
-      case "Unlocked":
+      case "active":
+      case "unlocked":
         return "default";
-      case "Locked":
+      case "locked":
         return "destructive";
-      case "Completed":
-      case "Pending":
-      case "Removed":
+      case "completed":
+      case "pending":
+      case "removed":
         return "secondary";
       default:
         return "default";
@@ -287,7 +287,7 @@ export default function CustomerDetailPage() {
         </Card>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-4">
             <ActionButton
-              status="Locked"
+              status="locked"
               title="Lock Device?"
               description="This will lock the device and restrict usage. Are you sure?"
               buttonText="Lock"
@@ -296,7 +296,7 @@ export default function CustomerDetailPage() {
               className="w-full"
             />
              <ActionButton
-              status="Unlocked"
+              status="unlocked"
               title="Unlock Device?"
               description="This will unlock the device and restore full functionality. Are you sure?"
               buttonText="Unlock"
@@ -305,7 +305,7 @@ export default function CustomerDetailPage() {
               className="bg-green-500 hover:bg-green-600 text-white w-full"
             />
             <ActionButton
-              status="Removed"
+              status="removed"
               title="Remove Customer?"
               description="This action will mark the customer as removed. This cannot be undone. Are you sure?"
               buttonText="Remove"

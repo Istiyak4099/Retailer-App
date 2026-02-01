@@ -18,7 +18,7 @@ export interface Customer {
   imei_1: string;
   imei_2: string;
   uid?: string;
-  status: "Active" | "Locked" | "Completed" | "Pending" | "Unlocked" | "Removed";
+  status: "active" | "locked" | "completed" | "pending" | "unlocked" | "removed";
 }
 
 export interface EmiDetails {

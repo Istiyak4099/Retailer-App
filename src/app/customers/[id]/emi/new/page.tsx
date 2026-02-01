@@ -102,7 +102,7 @@ export default function NewEmiPage() {
       
       const customerDocRef = doc(db, "Customers", id);
       await updateDoc(customerDocRef, {
-        status: "Active"
+        status: "active"
       });
 
       toast({
