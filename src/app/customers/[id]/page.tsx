@@ -235,7 +235,7 @@ export default function CustomerDetailPage() {
           <CardContent className="p-4 md:p-6 space-y-4">
             <dl className="divide-y">
               <SectionTitle>Device Information</SectionTitle>
-              <InfoRow label="Android ID" value={customer.android_id} />
+              <InfoRow label="Android ID" value={emiDetails?.android_id || customer.android_id} />
 
               <SectionTitle>Loan Information</SectionTitle>
               <InfoRow label="Product Price" value={emiDetails?.price ? `₹${emiDetails.price.toLocaleString()}`: 'N/A'} />

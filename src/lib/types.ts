@@ -36,4 +36,5 @@ export interface EmiDetails {
   nid_back: string; // URL
   live_photo: string; // URL
   created_time: Date;
+  android_id?: string;
 }

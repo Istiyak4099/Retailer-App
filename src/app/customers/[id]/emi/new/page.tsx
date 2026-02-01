@@ -109,6 +109,7 @@ export default function NewEmiPage() {
       await addDoc(collection(db, "EmiDetails"), {
         customerId: id,
         product_name: values.product_name,
+        android_id: values.android_id,
         price: price,
         processing_fee: processing_fee,
         down_payment: down_payment,
@@ -292,7 +293,7 @@ export default function NewEmiPage() {
                       )}
                       <FormControl>
                          <Input type="file" {...rest} onChange={(e) => {
-                            onChange(e.g.target.files);
+                            onChange(e.target.files);
                             handleFileChange(e, setNidBackPreview);
                          }} />
                       </FormControl>
