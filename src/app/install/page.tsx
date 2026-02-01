@@ -16,7 +16,7 @@ export default function InstallPage() {
           <CardContent className="flex flex-col items-center justify-center gap-4">
             <div className="p-4 bg-white rounded-lg border">
               <Image
-                src="/qr-code.png"
+                src="/frame (2).png"
                 alt="QR Code for Lock Module APK"
                 width={256}
                 height={256}
