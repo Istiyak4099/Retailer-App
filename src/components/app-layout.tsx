@@ -25,6 +25,7 @@ import {
   Headset,
   Users,
   ArrowLeft,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -50,9 +51,35 @@ export function AppLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
-  const handleLogout = () => {
-    toast({ title: "Logout Clicked", description: "Authentication is currently disabled." });
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        router.push('/login');
+      } else {
+        const data = await response.json();
+        toast({
+          variant: "destructive",
+          title: "Logout Failed",
+          description: data.error || "Could not log out. Please try again.",
+        });
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        variant: "destructive",
+        title: "Logout Error",
+        description: "An unexpected error occurred during logout.",
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -94,8 +121,14 @@ export function AppLayout({
                         <Bell className="h-5 w-5" />
                         <span className="sr-only">Notifications</span>
                     </Button>
-                    <Button variant="ghost" size="icon" className="rounded-full text-primary-foreground hover:text-primary-foreground hover:bg-primary/80" onClick={handleLogout}>
-                        <LogOut className="h-5 w-5" />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="rounded-full text-primary-foreground hover:text-primary-foreground hover:bg-primary/80" 
+                      onClick={handleLogout}
+                      disabled={isLoggingOut}
+                    >
+                        {isLoggingOut ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogOut className="h-5 w-5" />}
                         <span className="sr-only">Logout</span>
                     </Button>
                 </div>
