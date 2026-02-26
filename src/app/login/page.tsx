@@ -95,7 +95,9 @@ export default function LoginPage() {
       const verifyData = await verifyRes.json();
 
       if (!verifyRes.ok) {
-        throw new Error(verifyData.error || 'Invalid credentials');
+        setError(verifyData.error || 'Invalid credentials');
+        setLoading(false);
+        return;
       }
 
       // 2. Initialize Recaptcha
@@ -160,7 +162,9 @@ export default function LoginPage() {
       const sessionData = await sessionRes.json();
 
       if (!sessionRes.ok) {
-        throw new Error(sessionData.error || 'Failed to create session');
+        setError(sessionData.error || 'Failed to create session');
+        setLoading(false);
+        return;
       }
 
       // 4. Success! Redirect to dashboard
@@ -183,15 +187,18 @@ export default function LoginPage() {
     setSuccessMessage(null);
 
     try {
-      // Re-verify with Site A (or just re-trigger Firebase if trusted)
-      // Here we re-trigger the whole check to ensure consistency
       const verifyRes = await fetch('/api/auth/verify-credentials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mobileNumber, password }),
       });
 
-      if (!verifyRes.ok) throw new Error('Verification failed');
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) {
+        setError(verifyData.error || 'Verification failed');
+        setLoading(false);
+        return;
+      }
 
       if (!recaptchaVerifierRef.current) {
         recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
@@ -210,7 +217,6 @@ export default function LoginPage() {
       setCanResend(false);
       setSuccessMessage('Code resent!');
       
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
       setError('Failed to resend code. Please try again.');

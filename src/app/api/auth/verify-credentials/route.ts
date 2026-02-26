@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     if (!siteAUrl) {
       console.error('SITE_A_URL environment variable is not defined');
       return NextResponse.json(
-        { error: 'Authentication service configuration error' },
+        { error: 'Server configuration error: SITE_A_URL is missing. Please check your .env file.' },
         { status: 500 }
       );
     }
@@ -58,7 +58,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Success - Extract user data and return to client
-    // We don't store Site A's token; we just confirm validity.
     const { userId, role } = data;
 
     return NextResponse.json(
