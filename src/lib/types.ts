@@ -1,4 +1,3 @@
-
 export interface User {
   uid?: string;
   shop_owner_name: string;
@@ -38,4 +37,24 @@ export interface EmiDetails {
   live_photo: string; // URL
   created_time: Date;
   android_id?: string;
+}
+
+export interface AuthUser {
+  userId: string
+  mobileNumber: string
+  name: string
+  role: "Admin" | "Super" | "Distributor" | "Retailer"
+  shopName: string
+  dealerCode: string
+  iat: number
+  exp: number
+}
+
+export interface SessionData {
+  userId: string
+  mobileNumber: string
+  name: string
+  role: "Admin" | "Super" | "Distributor" | "Retailer"
+  shopName: string
+  dealerCode: string
 }
