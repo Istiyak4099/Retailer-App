@@ -3,6 +3,7 @@
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   KeyRound,
   UserPlus,
@@ -22,10 +23,12 @@ import {
 } from "lucide-react";
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { SessionData } from "@/lib/types";
+import { useRouter } from "next/navigation";
 
 const StatCard = ({ icon: Icon, title, value, iconColor, href, loading }: { icon: React.ElementType, title: string, value: string | number, iconColor?: string, href: string, loading?: boolean }) => (
     <Link href={href} passHref className="h-full">
@@ -56,6 +59,8 @@ const ListItem = ({ icon: Icon, title, value, href, loading }: { icon: React.Ele
 
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const [session, setSession] = useState<SessionData | null>(null);
   const [stats, setStats] = useState({
     today: 0,
     active: 0,
@@ -67,62 +72,111 @@ export default function DashboardPage() {
     total: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [sessionLoading, setSessionLoading] = useState(true);
+
+  const fetchSession = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/session');
+      if (response.status === 401) {
+        router.push('/login');
+        return;
+      }
+      if (response.ok) {
+        const data = await response.json();
+        setSession(data);
+      }
+    } catch (error) {
+      console.error('Error fetching session:', error);
+    } finally {
+      setSessionLoading(false);
+    }
+  }, [router]);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      setLoading(true);
-      try {
-        const customerQuery = collection(db, 'Customers');
-        const querySnapshot = await getDocs(customerQuery);
-        
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+    fetchSession();
+  }, [fetchSession]);
 
-        const customerIds = querySnapshot.docs.map(doc => doc.id);
+  const fetchStats = useCallback(async () => {
+    if (!session) return;
+    setLoading(true);
+    try {
+      const customerQuery = query(
+        collection(db, 'Customers'),
+        where("dealerId", "==", session.userId)
+      );
+      const querySnapshot = await getDocs(customerQuery);
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
 
-        let emiSnapshot;
-        if(customerIds.length > 0){
-          const emiQuery = query(
-            collection(db, "EmiDetails"),
-            where("customerId", "in", customerIds),
-            where("created_time", ">=", Timestamp.fromDate(today)),
-            where("created_time", "<", Timestamp.fromDate(tomorrow))
-          );
-          emiSnapshot = await getDocs(emiQuery);
-        }
-        
-        const todaysActivations = new Set(emiSnapshot ? emiSnapshot.docs.map(doc => doc.data().customerId) : []);
-        
-        let active = 0, pending = 0, locked = 0, unlocked = 0, removed = 0, total = 0;
+      const customerIds = querySnapshot.docs.map(doc => doc.id);
 
-        querySnapshot.forEach((doc) => {
-            const customer = doc.data();
-            total++;
-            switch(customer.status) {
-                case 'active': active++; break;
-                case 'pending': pending++; break;
-                case 'locked': locked++; break;
-                case 'unlocked': unlocked++; break;
-                case 'removed': removed++; break;
-            }
-        });
-
-        const userTodaysActivations = [...todaysActivations].filter(id => customerIds.includes(id)).length;
-        
-        const balance = 0; 
-        
-        setStats({ today: userTodaysActivations, active, balance, pending, locked, unlocked, removed, total });
-
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-      } finally {
-        setLoading(false);
+      let emiSnapshot;
+      if(customerIds.length > 0){
+        const emiQuery = query(
+          collection(db, "EmiDetails"),
+          where("customerId", "in", customerIds),
+          where("created_time", ">=", Timestamp.fromDate(today)),
+          where("created_time", "<", Timestamp.fromDate(tomorrow))
+        );
+        emiSnapshot = await getDocs(emiQuery);
       }
-    };
-    fetchStats();
-  }, []);
+      
+      const todaysActivations = new Set(emiSnapshot ? emiSnapshot.docs.map(doc => doc.data().customerId) : []);
+      
+      let active = 0, pending = 0, locked = 0, unlocked = 0, removed = 0, total = 0;
+
+      querySnapshot.forEach((doc) => {
+          const customer = doc.data();
+          total++;
+          switch(customer.status) {
+              case 'active': active++; break;
+              case 'pending': pending++; break;
+              case 'locked': locked++; break;
+              case 'unlocked': unlocked++; break;
+              case 'removed': removed++; break;
+          }
+      });
+
+      const userTodaysActivations = [...todaysActivations].length;
+      
+      // Balance could be fetched from the session or another user-scoped collection if applicable
+      const balance = 0; 
+      
+      setStats({ today: userTodaysActivations, active, balance, pending, locked, unlocked, removed, total });
+
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (session) {
+      fetchStats();
+    }
+  }, [session, fetchStats]);
+
+  if (sessionLoading || !session) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const getRoleBadgeColor = (role: SessionData['role']) => {
+    switch (role) {
+      case 'Admin': return 'bg-red-500 hover:bg-red-600';
+      case 'Super': return 'bg-orange-500 hover:bg-orange-600';
+      case 'Distributor': return 'bg-blue-500 hover:bg-blue-600';
+      case 'Retailer': return 'bg-green-500 hover:bg-green-600';
+      default: return 'bg-gray-500';
+    }
+  };
 
   const statCards = [
     { icon: CheckCircle, title: "Today's Activation", value: stats.today, iconColor: "text-blue-500", href: "/customers/list?status=today" },
@@ -137,6 +191,13 @@ export default function DashboardPage() {
   return (
     <AppLayout title="Dashboard">
         <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm text-muted-foreground">Welcome, {session.name}</span>
+                <Badge className={cn("text-white border-none", getRoleBadgeColor(session.role))}>
+                    {session.role}
+                </Badge>
+            </div>
+
             <Carousel
                 opts={{
                     align: "start",
