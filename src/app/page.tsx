@@ -1,23 +1,20 @@
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
-"use client";
+/**
+ * Root page redirect gate.
+ * 
+ * - Server component that checks for the "auth_session" cookie.
+ * - Redirects to /dashboard if authenticated.
+ * - Redirects to /login if not authenticated.
+ */
+export default async function HomePage() {
+  const cookieStore = await cookies();
+  const session = cookieStore.get('auth_session');
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
-
-export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace('/login');
-  }, [router]);
-
-  return (
-    <div className="flex h-screen w-full items-center justify-center bg-background p-4">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Redirecting to login...</p>
-      </div>
-    </div>
-  );
+  if (session) {
+    redirect('/dashboard');
+  } else {
+    redirect('/login');
+  }
 }
