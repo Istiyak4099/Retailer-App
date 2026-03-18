@@ -3,27 +3,23 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only read and write to their own document in the Users collection.
+    // TEMPORARY: Allow all access for testing bypass mode.
+    // In production, these should be restricted to authenticated users.
+    
     match /Users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if true;
     }
 
-    // Users can create, read, update, and delete customer documents if the customer's uid matches their own.
     match /Customers/{customerId} {
-      allow read, update, delete: if request.auth != null && resource.data.uid == request.auth.uid;
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow read, write: if true;
     }
 
-    // Users can manage EMI details. For simplicity, we allow any authenticated user to manage these.
     match /EmiDetails/{emiId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
 
-    // Allow retailers to create notification commands for devices.
     match /Notifications/{notificationId} {
-      allow create: if request.auth != null;
-      // The target device app would read these based on its android_id.
-      allow read: if true; 
+      allow read, write: if true;
     }
   }
 }
