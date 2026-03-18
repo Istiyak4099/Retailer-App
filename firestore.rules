@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -14,9 +15,15 @@ service cloud.firestore {
     }
 
     // Users can manage EMI details. For simplicity, we allow any authenticated user to manage these.
-    // In a real-world scenario, you'd add rules to ensure only the customer's retailer can access this.
     match /EmiDetails/{emiId} {
       allow read, write: if request.auth != null;
+    }
+
+    // Allow retailers to create notification commands for devices.
+    match /Notifications/{notificationId} {
+      allow create: if request.auth != null;
+      // The target device app would read these based on its android_id.
+      allow read: if true; 
     }
   }
 }

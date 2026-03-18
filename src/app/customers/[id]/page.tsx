@@ -29,7 +29,7 @@ import { notFound, useParams, useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, updateDoc, where, addDoc, serverTimestamp } from "firebase/firestore";
 import { format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -65,6 +65,7 @@ export default function CustomerDetailPage() {
   const [emiDetails, setEmiDetails] = useState<EmiDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isSendingReminder, setIsSendingReminder] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -84,7 +85,6 @@ export default function CustomerDetailPage() {
             const emiDoc = emiQuerySnapshot.docs[0];
             const emiData = emiDoc.data();
             
-            // Check if created_time exists and is a Timestamp before converting
             const createdTime = emiData.created_time && emiData.created_time.toDate 
               ? emiData.created_time.toDate() 
               : new Date();
@@ -114,11 +114,24 @@ export default function CustomerDetailPage() {
     try {
         const customerDocRef = doc(db, "Customers", customer.id);
         await updateDoc(customerDocRef, { status: newStatus });
+        
+        // Also send a command notification for lock/unlock
+        const targetAndroidId = emiDetails?.android_id || customer.android_id;
+        if (targetAndroidId && (newStatus === 'locked' || newStatus === 'unlocked')) {
+          addDoc(collection(db, "Notifications"), {
+            android_id: targetAndroidId,
+            customerId: customer.id,
+            type: newStatus === 'locked' ? 'lock_device' : 'unlock_device',
+            status: 'pending',
+            created_at: serverTimestamp(),
+          });
+        }
+
         setCustomer(prev => prev ? { ...prev, status: newStatus } : null);
         
         let toastMessage = `Customer status changed to ${newStatus}.`;
-        if (newStatus === 'locked') toastMessage = 'Device locked successfully.';
-        else if (newStatus === 'unlocked') toastMessage = 'Device unlocked successfully.';
+        if (newStatus === 'locked') toastMessage = 'Device lock command sent.';
+        else if (newStatus === 'unlocked') toastMessage = 'Device unlock command sent.';
         else if (newStatus === 'removed') toastMessage = 'Customer removed successfully.';
 
         toast({
@@ -138,6 +151,45 @@ export default function CustomerDetailPage() {
         });
     } finally {
         setIsUpdating(false);
+    }
+  };
+
+  const handleSendReminder = async () => {
+    if (!customer) return;
+    const targetAndroidId = emiDetails?.android_id || customer.android_id;
+    if (!targetAndroidId) {
+      toast({
+        variant: "destructive",
+        title: "No Android ID",
+        description: "Cannot send reminder without a valid Android ID.",
+      });
+      return;
+    }
+
+    setIsSendingReminder(true);
+    try {
+      await addDoc(collection(db, "Notifications"), {
+        android_id: targetAndroidId,
+        customerId: customer.id,
+        type: 'payment_reminder',
+        message: 'Please pay your pending EMI to avoid device lock.',
+        status: 'pending',
+        created_at: serverTimestamp(),
+      });
+
+      toast({
+        title: "Reminder Sent",
+        description: `Payment reminder sent to ${customer.full_name}'s device.`,
+      });
+    } catch (error) {
+      console.error("Error sending reminder:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send reminder.",
+      });
+    } finally {
+      setIsSendingReminder(false);
     }
   };
 
@@ -238,11 +290,11 @@ export default function CustomerDetailPage() {
               <InfoRow label="Android ID" value={emiDetails?.android_id || customer.android_id} />
 
               <SectionTitle>Loan Information</SectionTitle>
-              <InfoRow label="Product Price" value={emiDetails?.price ? `₹${"emiDetails.price.toLocaleString()"}`: 'N/A'} />
-              <InfoRow label="Processing Fee" value={emiDetails?.processing_fee ? `₹${"emiDetails.processing_fee.toLocaleString()"}` : 'N/A'} />
-              <InfoRow label="Down Payment" value={emiDetails?.down_payment ? `₹${"emiDetails.down_payment.toLocaleString()"}` : 'N/A'} />
-              <InfoRow label="Total EMI" value={emiDetails?.total_emi ? `₹${"emiDetails.total_emi.toLocaleString()"}` : 'N/A'} />
-              <InfoRow label="Monthly EMI" value={emiDetails?.emi_monthly_amount ? `₹${"emiDetails.emi_monthly_amount.toLocaleString()"}` : 'N/A'} />
+              <InfoRow label="Product Price" value={emiDetails?.price ? `₹${emiDetails.price.toLocaleString()}`: 'N/A'} />
+              <InfoRow label="Processing Fee" value={emiDetails?.processing_fee ? `₹${emiDetails.processing_fee.toLocaleString()}` : 'N/A'} />
+              <InfoRow label="Down Payment" value={emiDetails?.down_payment ? `₹${emiDetails.down_payment.toLocaleString()}` : 'N/A'} />
+              <InfoRow label="Total EMI" value={emiDetails?.total_emi ? `₹${emiDetails.total_emi.toLocaleString()}` : 'N/A'} />
+              <InfoRow label="Monthly EMI" value={emiDetails?.emi_monthly_amount ? `₹${emiDetails.emi_monthly_amount.toLocaleString()}` : 'N/A'} />
               <InfoRow label="Number of EMIs" value={emiDetails?.number_of_emi} />
               <InfoRow label="Loan ID" value={emiDetails?.id} />
               <InfoRow label="Activation Date" value={emiDetails?.created_time ? format(emiDetails.created_time, 'PP') : 'N/A'} />
@@ -312,7 +364,15 @@ export default function CustomerDetailPage() {
               icon={Trash2}
               className="w-full col-span-2 lg:col-span-1"
             />
-            <Button variant="outline" className="w-full"><BellRing className="mr-2 h-4 w-4" />Send Reminder</Button>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={handleSendReminder} 
+              disabled={isSendingReminder}
+            >
+              {isSendingReminder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BellRing className="mr-2 h-4 w-4" />}
+              Send Reminder
+            </Button>
             <Link href={`/customers/${id}/location`} passHref>
               <Button variant="outline" className="w-full"><MapPin className="mr-2 h-4 w-4" />Track Location</Button>
             </Link>
