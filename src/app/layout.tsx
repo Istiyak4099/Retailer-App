@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
+import { FirebaseErrorListener } from '@/components/firebase-error-listener';
 
 export const metadata: Metadata = {
   title: 'Defence BD',
@@ -34,6 +35,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
+        <FirebaseErrorListener />
         <Suspense fallback={<RootLoading />}>
           {children}
         </Suspense>

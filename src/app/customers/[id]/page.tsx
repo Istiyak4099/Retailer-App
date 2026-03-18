@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppLayout } from "@/components/app-layout";
@@ -43,6 +42,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const InfoRow = ({ label, value }: { label: string; value: string | number | undefined | null }) => (
   <div className="flex justify-between py-2">
@@ -111,20 +112,32 @@ export default function CustomerDetailPage() {
   const handleUpdateStatus = async (newStatus: Customer['status']) => {
     if (!customer) return;
     setIsUpdating(true);
-    try {
-        const customerDocRef = doc(db, "Customers", customer.id);
-        await updateDoc(customerDocRef, { status: newStatus });
-        
+    
+    const customerDocRef = doc(db, "Customers", customer.id);
+    const updateData = { status: newStatus };
+
+    updateDoc(customerDocRef, updateData)
+      .then(async () => {
         // Also send a command notification for lock/unlock
         const targetAndroidId = emiDetails?.android_id || customer.android_id;
         if (targetAndroidId && (newStatus === 'locked' || newStatus === 'unlocked')) {
-          addDoc(collection(db, "Notifications"), {
+          const notificationData = {
             android_id: targetAndroidId,
             customerId: customer.id,
             type: newStatus === 'locked' ? 'lock_device' : 'unlock_device',
             status: 'pending',
             created_at: serverTimestamp(),
-          });
+          };
+
+          addDoc(collection(db, "Notifications"), notificationData)
+            .catch(async (error) => {
+              const permissionError = new FirestorePermissionError({
+                path: 'Notifications',
+                operation: 'create',
+                requestResourceData: notificationData,
+              } satisfies SecurityRuleContext);
+              errorEmitter.emit('permission-error', permissionError);
+            });
         }
 
         setCustomer(prev => prev ? { ...prev, status: newStatus } : null);
@@ -142,16 +155,18 @@ export default function CustomerDetailPage() {
         if (newStatus === "removed") {
             router.push('/customers/list?status=removed');
         }
-    } catch (error) {
-        console.error("Error updating status:", error);
-        toast({
-            variant: "destructive",
-            title: "Update Failed",
-            description: "Could not update the customer's status.",
-        });
-    } finally {
+      })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: customerDocRef.path,
+          operation: 'update',
+          requestResourceData: updateData,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
         setIsUpdating(false);
-    }
+      });
   };
 
   const handleSendReminder = async () => {
@@ -167,30 +182,33 @@ export default function CustomerDetailPage() {
     }
 
     setIsSendingReminder(true);
-    try {
-      await addDoc(collection(db, "Notifications"), {
-        android_id: targetAndroidId,
-        customerId: customer.id,
-        type: 'payment_reminder',
-        message: 'Please pay your pending EMI to avoid device lock.',
-        status: 'pending',
-        created_at: serverTimestamp(),
-      });
+    const notificationData = {
+      android_id: targetAndroidId,
+      customerId: customer.id,
+      type: 'payment_reminder',
+      message: 'Please pay your pending EMI to avoid device lock.',
+      status: 'pending',
+      created_at: serverTimestamp(),
+    };
 
-      toast({
-        title: "Reminder Sent",
-        description: `Payment reminder sent to ${customer.full_name}'s device.`,
+    addDoc(collection(db, "Notifications"), notificationData)
+      .then(() => {
+        toast({
+          title: "Reminder Sent",
+          description: `Payment reminder sent to ${customer.full_name}'s device.`,
+        });
+      })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'Notifications',
+          operation: 'create',
+          requestResourceData: notificationData,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsSendingReminder(false);
       });
-    } catch (error) {
-      console.error("Error sending reminder:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to send reminder.",
-      });
-    } finally {
-      setIsSendingReminder(false);
-    }
   };
 
 
