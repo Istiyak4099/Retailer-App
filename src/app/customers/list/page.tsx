@@ -43,11 +43,20 @@ function CustomersListPageContent() {
         let fetchedCustomers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
 
         if (status === 'today') {
+            if (fetchedCustomers.length === 0) {
+              setCustomers([]);
+              setLoading(false);
+              return;
+            }
+
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1);
 
+            // Note: Firestore 'in' filters have a limit of 30 items. 
+            // For a production app with many customers, this logic should be reversed 
+            // (query EmiDetails first, then fetch Customers).
             const emiQuery = query(
               collection(db, "EmiDetails"),
               where("customerId", "in", fetchedCustomers.map(c => c.id)),
