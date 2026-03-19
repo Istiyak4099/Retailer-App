@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppLayout } from "@/components/app-layout";
@@ -118,33 +119,11 @@ export default function CustomerDetailPage() {
 
     updateDoc(customerDocRef, updateData)
       .then(async () => {
-        // Also send a command notification for lock/unlock
-        const targetAndroidId = emiDetails?.android_id || customer.android_id;
-        if (targetAndroidId && (newStatus === 'locked' || newStatus === 'unlocked')) {
-          const notificationData = {
-            android_id: targetAndroidId,
-            customerId: customer.id,
-            type: newStatus === 'locked' ? 'lock_device' : 'unlock_device',
-            status: 'pending',
-            created_at: serverTimestamp(),
-          };
-
-          addDoc(collection(db, "Notifications"), notificationData)
-            .catch(async (error) => {
-              const permissionError = new FirestorePermissionError({
-                path: 'Notifications',
-                operation: 'create',
-                requestResourceData: notificationData,
-              } satisfies SecurityRuleContext);
-              errorEmitter.emit('permission-error', permissionError);
-            });
-        }
-
         setCustomer(prev => prev ? { ...prev, status: newStatus } : null);
         
         let toastMessage = `Customer status changed to ${newStatus}.`;
-        if (newStatus === 'locked') toastMessage = 'Device lock command sent.';
-        else if (newStatus === 'unlocked') toastMessage = 'Device unlock command sent.';
+        if (newStatus === 'locked') toastMessage = 'Device status updated to locked.';
+        else if (newStatus === 'unlocked') toastMessage = 'Device status updated to unlocked.';
         else if (newStatus === 'removed') toastMessage = 'Customer removed successfully.';
 
         toast({
@@ -195,7 +174,7 @@ export default function CustomerDetailPage() {
       .then(() => {
         toast({
           title: "Reminder Sent",
-          description: `Payment reminder sent to ${customer.full_name}'s device.`,
+          description: `Payment reminder command sent to device: ${targetAndroidId}`,
         });
       })
       .catch(async (serverError) => {
@@ -357,8 +336,8 @@ export default function CustomerDetailPage() {
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-4">
             <ActionButton
               status="locked"
-              title="Lock Device?"
-              description="This will lock the device and restrict usage. Are you sure?"
+              title="Mark Device Locked?"
+              description="This updates the system status for this device."
               buttonText="Lock"
               variant="destructive"
               icon={Lock}
@@ -366,8 +345,8 @@ export default function CustomerDetailPage() {
             />
              <ActionButton
               status="unlocked"
-              title="Unlock Device?"
-              description="This will unlock the device and restore full functionality. Are you sure?"
+              title="Mark Device Unlocked?"
+              description="This updates the system status for this device."
               buttonText="Unlock"
               variant="secondary"
               icon={Unlock}
