@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -6,17 +5,9 @@ import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { QrCode, PlusCircle, CreditCard, Loader2 } from "lucide-react";
+import { QrCode, PlusCircle, CreditCard, Loader2, CheckCircle2 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot, updateDoc, increment } from "firebase/firestore";
-
-const availableCodes = [
-  '7aqtd566yud7p',
-  'fgh3k9s8w2qaz',
-  'p0oiu8y7t5rew',
-  'mnb2v4c5x7z1q',
-  'lkj7h5g4f6d3s'
-];
 
 export default function CodeBalancePage() {
   const [balance, setBalance] = useState<number | null>(null);
@@ -36,20 +27,22 @@ export default function CodeBalancePage() {
   }, []);
 
   const handleScan = () => {
-    toast({
-        title: "Scanner Ready",
-        description: "QR code scanner for recharge would open now."
-    })
+    // Silent for scanner as per previous request
   };
 
   const handleAddBalance = async () => {
       await updateDoc(doc(db, "Users", "default-user"), {
-          code_balance: increment(5)
+          code_balance: increment(10)
       });
       toast({
-          title: "Balance Added",
-          description: "Added 5 codes for demonstration."
-      })
+          title: (
+            <div className="flex flex-col items-center gap-2">
+              <CheckCircle2 className="h-10 w-10 text-green-500" />
+              <span>Balance Added</span>
+            </div>
+          ),
+          description: "Added 10 codes for demonstration."
+      });
   }
 
   return (
@@ -83,7 +76,7 @@ export default function CodeBalancePage() {
                     </Button>
                     <Button variant="secondary" onClick={handleAddBalance}>
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Add Demo
+                        Add Demo (10)
                     </Button>
                 </CardContent>
             </Card>

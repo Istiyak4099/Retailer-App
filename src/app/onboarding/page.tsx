@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -92,7 +91,7 @@ export default function OnboardingPage() {
       const userPayload = {
         ...values,
         email_address: "testuser@example.com",
-        code_balance: isNewUser ? 5 : userData?.code_balance || 0, // Initialize with 5 codes for new users
+        code_balance: isNewUser ? 10 : userData?.code_balance || 0, // Initialize with 10 codes for new users
       };
 
       await setDoc(doc(db, "Users", staticUserId), userPayload, { merge: true });
