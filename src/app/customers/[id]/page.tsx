@@ -122,9 +122,9 @@ export default function CustomerDetailPage() {
         setCustomer(prev => prev ? { ...prev, status: newStatus } : null);
         
         let toastMessage = `Customer status changed to ${newStatus}.`;
-        if (newStatus === 'locked') toastMessage = 'Device status updated to locked.';
-        else if (newStatus === 'unlocked') toastMessage = 'Device status updated to unlocked.';
-        else if (newStatus === 'removed') toastMessage = 'Customer removed successfully.';
+        if (newStatus === 'locked') toastMessage = 'Device Locked Successfully.';
+        else if (newStatus === 'unlocked') toastMessage = 'Device Unlocked Successfully.';
+        else if (newStatus === 'removed') toastMessage = 'Customer Removed Successfully.';
 
         toast({
             title: "Status Updated",
@@ -336,8 +336,8 @@ export default function CustomerDetailPage() {
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-4">
             <ActionButton
               status="locked"
-              title="Mark Device Locked?"
-              description="This updates the system status for this device."
+              title="Are you sure you want to Lock this device?"
+              description="This action locks the customer's device."
               buttonText="Lock"
               variant="destructive"
               icon={Lock}
@@ -345,8 +345,8 @@ export default function CustomerDetailPage() {
             />
              <ActionButton
               status="unlocked"
-              title="Mark Device Unlocked?"
-              description="This updates the system status for this device."
+              title="Are you sure you want to Unlock this device?"
+              description="This action unlocks the customer's device."
               buttonText="Unlock"
               variant="secondary"
               icon={Unlock}
@@ -354,22 +354,41 @@ export default function CustomerDetailPage() {
             />
             <ActionButton
               status="removed"
-              title="Remove Customer?"
-              description="This action will mark the customer as removed. This cannot be undone. Are you sure?"
+              title="Are you sure you want to Remove this Customer?"
+              description="This action will remove the customer and release the device from control. This cannot be undone."
               buttonText="Remove"
               variant="outline"
               icon={Trash2}
               className="w-full col-span-2 lg:col-span-1"
             />
-            <Button 
-              variant="outline" 
-              className="w-full" 
-              onClick={handleSendReminder} 
-              disabled={isSendingReminder}
-            >
-              {isSendingReminder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BellRing className="mr-2 h-4 w-4" />}
-              Send Reminder
-            </Button>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  disabled={isSendingReminder}
+                >
+                  {isSendingReminder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BellRing className="mr-2 h-4 w-4" />}
+                  Send Reminder
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Send Payment Reminder?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will send a notification command to the target device ({emiDetails?.android_id || customer.android_id}).
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleSendReminder}>
+                    Send Reminder
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
             <Link href={`/customers/${id}/location`} passHref>
               <Button variant="outline" className="w-full"><MapPin className="mr-2 h-4 w-4" />Track Location</Button>
             </Link>
