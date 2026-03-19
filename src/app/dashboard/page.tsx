@@ -12,7 +12,6 @@ import {
   ChevronRight,
   UserCircle,
   Youtube,
-  Share2,
   Headset,
   Hourglass,
   Lock,
@@ -204,7 +203,7 @@ export default function DashboardPage() {
                 <Link href="/install" passHref>
                     <Button className="w-full h-12 text-base font-semibold shadow-lg" variant="secondary">
                         <QrCode className="mr-2 h-5 w-5" />
-                        Scan Device QR Code
+                        Setup Device
                     </Button>
                 </Link>
             </div>
