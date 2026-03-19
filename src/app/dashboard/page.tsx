@@ -25,18 +25,17 @@ import Link from 'next/link';
 import { cn } from "@/lib/utils";
 import { useEffect, useState, useCallback } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { collection, query, where, getDocs, Timestamp, onSnapshot } from "firebase/firestore";
 import { SessionData } from "@/lib/types";
 import { useRouter } from "next/navigation";
 
 const StatCard = ({ icon: Icon, title, value, iconColor, href, loading }: { icon: React.ElementType, title: string, value: string | number, iconColor?: string, href: string, loading?: boolean }) => (
     <Link href={href} passHref className="h-full">
-      <Card className="text-center shadow-md h-full hover:bg-muted/50 transition-colors">
-          <CardContent className="p-4 flex flex-col items-center justify-center h-full">
-              <Icon className={cn("mx-auto h-8 w-8 text-primary mb-2", iconColor)} />
-              {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <p className="text-2xl font-bold">{value}</p>}
-              <p className="text-xs text-muted-foreground">{title}</p>
+      <Card className="text-center shadow-md h-full hover:bg-muted/50 transition-colors border-primary/10">
+          <CardContent className="p-3 flex flex-col items-center justify-center h-full">
+              <Icon className={cn("h-7 w-7 mb-1", iconColor || "text-primary")} />
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <p className="text-xl font-bold">{value}</p>}
+              <p className="text-[10px] text-muted-foreground uppercase font-semibold text-center leading-tight">{title}</p>
           </CardContent>
       </Card>
     </Link>
@@ -44,19 +43,18 @@ const StatCard = ({ icon: Icon, title, value, iconColor, href, loading }: { icon
 
 const ListItem = ({ icon: Icon, title, value, href, loading }: { icon: React.ElementType, title: string, value?: string | number, href: string, loading?: boolean }) => (
     <Link href={href} passHref>
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm hover:shadow-md transition-shadow border-none bg-muted/30">
             <CardContent className="p-4 flex items-center">
                 <Icon className="h-6 w-6 text-primary mr-4" />
                 <div className="flex-grow">
-                    <p className="font-semibold">{title}</p>
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : value !== undefined && <p className="text-muted-foreground text-sm">{value}</p>}
+                    <p className="font-semibold text-sm">{title}</p>
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : value !== undefined && <p className="text-muted-foreground text-xs">{value}</p>}
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </CardContent>
         </Card>
     </Link>
 )
-
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -64,7 +62,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({
     today: 0,
     active: 0,
-    balance: 0,
+    balance: 5, // Mock initial balance
     pending: 0,
     locked: 0,
     unlocked: 0,
@@ -96,69 +94,61 @@ export default function DashboardPage() {
     fetchSession();
   }, [fetchSession]);
 
-  const fetchStats = useCallback(async () => {
+  useEffect(() => {
     if (!session) return;
+    
     setLoading(true);
-    try {
-      const customerQuery = query(
-        collection(db, 'Customers'),
-        where("dealerId", "==", session.userId)
-      );
-      const querySnapshot = await getDocs(customerQuery);
+    // Real-time listener for better sync and stat numbers
+    const q = query(collection(db, 'Customers'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let active = 0, pending = 0, locked = 0, unlocked = 0, removed = 0, total = 0;
       
+      snapshot.forEach((doc) => {
+        const customer = doc.data();
+        total++;
+        switch(customer.status) {
+          case 'active': active++; break;
+          case 'pending': pending++; break;
+          case 'locked': locked++; break;
+          case 'unlocked': unlocked++; break;
+          case 'removed': removed++; break;
+        }
+      });
+
+      // Fetch today's activations separately for precise counting
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const customerIds = querySnapshot.docs.map(doc => doc.id);
+      const emiQuery = query(
+        collection(db, "EmiDetails"),
+        where("created_time", ">=", Timestamp.fromDate(today)),
+        where("created_time", "<", Timestamp.fromDate(tomorrow))
+      );
 
-      let emiSnapshot;
-      if(customerIds.length > 0){
-        const emiQuery = query(
-          collection(db, "EmiDetails"),
-          where("customerId", "in", customerIds),
-          where("created_time", ">=", Timestamp.fromDate(today)),
-          where("created_time", "<", Timestamp.fromDate(tomorrow))
-        );
-        emiSnapshot = await getDocs(emiQuery);
-      }
-      
-      const todaysActivations = new Set(emiSnapshot ? emiSnapshot.docs.map(doc => doc.data().customerId) : []);
-      
-      let active = 0, pending = 0, locked = 0, unlocked = 0, removed = 0, total = 0;
-
-      querySnapshot.forEach((doc) => {
-          const customer = doc.data();
-          total++;
-          switch(customer.status) {
-              case 'active': active++; break;
-              case 'pending': pending++; break;
-              case 'locked': locked++; break;
-              case 'unlocked': unlocked++; break;
-              case 'removed': removed++; break;
-          }
+      getDocs(emiQuery).then((emiSnapshot) => {
+        const todaysActivations = emiSnapshot.size;
+        setStats(prev => ({ 
+          ...prev, 
+          today: todaysActivations, 
+          active, 
+          pending, 
+          locked, 
+          unlocked, 
+          removed, 
+          total 
+        }));
+        setLoading(false);
       });
-
-      const userTodaysActivations = [...todaysActivations].length;
-      
-      // Balance could be fetched from the session or another user-scoped collection if applicable
-      const balance = 0; 
-      
-      setStats({ today: userTodaysActivations, active, balance, pending, locked, unlocked, removed, total });
-
-    } catch (error) {
+    }, (error) => {
       console.error("Error fetching stats:", error);
-    } finally {
       setLoading(false);
-    }
-  }, [session]);
+    });
 
-  useEffect(() => {
-    if (session) {
-      fetchStats();
-    }
-  }, [session, fetchStats]);
+    return () => unsubscribe();
+  }, [session]);
 
   if (sessionLoading || !session) {
     return (
@@ -179,7 +169,7 @@ export default function DashboardPage() {
   };
 
   const statCards = [
-    { icon: CheckCircle, title: "Today's Activation", value: stats.today, iconColor: "text-blue-500", href: "/customers/list?status=today" },
+    { icon: CheckCircle, title: "Today Activation", value: stats.today, iconColor: "text-blue-500", href: "/customers/list?status=today" },
     { icon: Users, title: "Active Devices", value: stats.active, href: "/customers/list?status=active" },
     { icon: KeyRound, title: "Balance Keys", value: stats.balance, href: "/balance" },
     { icon: Hourglass, title: "Pending Devices", value: stats.pending, iconColor: "text-orange-500", href: "/customers/list?status=pending" },
@@ -190,51 +180,40 @@ export default function DashboardPage() {
 
   return (
     <AppLayout title="Dashboard">
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div className="flex items-center gap-2 mb-2">
                 <span className="text-sm text-muted-foreground">Welcome, {session.name}</span>
-                <Badge className={cn("text-white border-none", getRoleBadgeColor(session.role))}>
+                <Badge className={cn("text-white border-none text-[10px] px-2 py-0", getRoleBadgeColor(session.role))}>
                     {session.role}
                 </Badge>
             </div>
 
-            <Carousel
-                opts={{
-                    align: "start",
-                    dragFree: true,
-                }}
-                className="w-full"
-            >
-                <CarouselContent className="-ml-2">
-                    {statCards.map((card, index) => (
-                        <CarouselItem key={index} className="pl-2 basis-1/3 sm:basis-1/4 md:basis-1/5 lg:basis-1/6 xl:basis-[14%]">
-                           <StatCard {...card} loading={loading} />
-                        </CarouselItem>
-                    ))}
-                </CarouselContent>
-            </Carousel>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                {statCards.map((card, index) => (
+                    <StatCard key={index} {...card} loading={loading} />
+                ))}
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link href="/customers/new" passHref>
-                    <Button className="w-full">
+                    <Button className="w-full h-12 text-base font-semibold shadow-lg">
                         <UserPlus className="mr-2 h-5 w-5" />
                         Add Customer
                     </Button>
                 </Link>
                 <Link href="/install" passHref>
-                    <Button className="w-full" variant="secondary">
+                    <Button className="w-full h-12 text-base font-semibold shadow-lg" variant="secondary">
                         <QrCode className="mr-2 h-5 w-5" />
                         Scan Device QR Code
                     </Button>
                 </Link>
             </div>
 
-            <div className="space-y-2 pt-4">
+            <div className="space-y-2 pt-2">
                 <ListItem icon={Users} title="Total Customers" value={stats.total} href="/customers" loading={loading} />
                 <ListItem icon={KeyRound} title="Balance Keys" value={stats.balance} href="/balance" loading={loading} />
                 <ListItem icon={UserCircle} title="User Profile" href="/onboarding" />
                 <ListItem icon={Youtube} title="Installation Video" href="#" />
-                <ListItem icon={Share2} title="Running Phone QR Code" href="#" />
                 <ListItem icon={Headset} title="Contact Support" href="#" />
             </div>
         </div>

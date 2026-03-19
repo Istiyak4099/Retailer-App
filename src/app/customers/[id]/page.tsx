@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppLayout } from "@/components/app-layout";
@@ -22,6 +21,8 @@ import {
   Phone,
   User,
   Loader2,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -122,12 +123,23 @@ export default function CustomerDetailPage() {
         setCustomer(prev => prev ? { ...prev, status: newStatus } : null);
         
         let toastMessage = `Customer status changed to ${newStatus}.`;
-        if (newStatus === 'locked') toastMessage = 'Device Locked Successfully.';
-        else if (newStatus === 'unlocked') toastMessage = 'Device Unlocked Successfully.';
-        else if (newStatus === 'removed') toastMessage = 'Customer Removed Successfully.';
+        let toastTitle = "Status Updated";
+        
+        if (newStatus === 'locked') {
+          toastTitle = "Device Locked";
+          toastMessage = "Command executed successfully.";
+        } else if (newStatus === 'unlocked') {
+          toastTitle = "Device Unlocked";
+          toastMessage = "Command executed successfully.";
+        }
 
         toast({
-            title: "Status Updated",
+            title: (
+              <div className="flex flex-col items-center gap-2">
+                <CheckCircle2 className="h-10 w-10 text-green-500" />
+                <span>{toastTitle}</span>
+              </div>
+            ),
             description: toastMessage,
         });
 
@@ -154,7 +166,12 @@ export default function CustomerDetailPage() {
     if (!targetAndroidId) {
       toast({
         variant: "destructive",
-        title: "No Android ID",
+        title: (
+          <div className="flex flex-col items-center gap-2">
+            <AlertCircle className="h-10 w-10 text-red-500" />
+            <span>Missing ID</span>
+          </div>
+        ),
         description: "Cannot send reminder without a valid Android ID.",
       });
       return;
@@ -173,8 +190,13 @@ export default function CustomerDetailPage() {
     addDoc(collection(db, "Notifications"), notificationData)
       .then(() => {
         toast({
-          title: "Reminder Sent",
-          description: `Payment reminder command sent to device: ${targetAndroidId}`,
+          title: (
+            <div className="flex flex-col items-center gap-2">
+              <CheckCircle2 className="h-10 w-10 text-green-500" />
+              <span>Reminder Sent</span>
+            </div>
+          ),
+          description: `Command sent to device: ${targetAndroidId}`,
         });
       })
       .catch(async (serverError) => {
@@ -269,12 +291,12 @@ export default function CustomerDetailPage() {
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-2xl">{customer.full_name}</CardTitle>
-                    <Badge variant={getStatusVariant(customer.status)} className="ml-auto">
+                    <Badge variant={getStatusVariant(customer.status)} className="ml-auto uppercase text-[10px]">
                       {customer.status}
                     </Badge>
                 </div>
-                <div className="flex items-center text-muted-foreground mt-1">
-                    <Phone className="h-4 w-4 mr-2" />
+                <div className="flex items-center text-muted-foreground mt-1 text-sm">
+                    <Phone className="h-3 w-3 mr-2" />
                     <p>{customer.mobile_number}</p>
                 </div>
               </div>
@@ -282,7 +304,7 @@ export default function CustomerDetailPage() {
           </CardHeader>
 
           <CardContent className="p-4 md:p-6 space-y-4">
-            <dl className="divide-y">
+            <dl className="divide-y text-sm">
               <SectionTitle>Device Information</SectionTitle>
               <InfoRow label="Android ID" value={emiDetails?.android_id || customer.android_id} />
 
@@ -308,23 +330,23 @@ export default function CustomerDetailPage() {
             {emiDetails && (emiDetails.nid_front || emiDetails.nid_back || emiDetails.live_photo) && (
               <>
                 <SectionTitle>Uploaded Documents</SectionTitle>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-2">
                     {emiDetails.nid_front && (
-                      <div className="space-y-2 text-center">
-                          <Image src={emiDetails.nid_front} alt="NID Front" width={300} height={200} className="rounded-lg w-full object-contain h-40 border" data-ai-hint="document photo" />
-                          <p className="text-sm text-muted-foreground">NID Front</p>
+                      <div className="space-y-1 text-center">
+                          <Image src={emiDetails.nid_front} alt="NID Front" width={150} height={100} className="rounded-md w-full object-cover h-24 border" data-ai-hint="document photo" />
+                          <p className="text-[10px] text-muted-foreground">NID Front</p>
                       </div>
                     )}
                     {emiDetails.nid_back && (
-                      <div className="space-y-2 text-center">
-                          <Image src={emiDetails.nid_back} alt="NID Back" width={300} height={200} className="rounded-lg w-full object-contain h-40 border" data-ai-hint="document photo" />
-                          <p className="text-sm text-muted-foreground">NID Back</p>
+                      <div className="space-y-1 text-center">
+                          <Image src={emiDetails.nid_back} alt="NID Back" width={150} height={100} className="rounded-md w-full object-cover h-24 border" data-ai-hint="document photo" />
+                          <p className="text-[10px] text-muted-foreground">NID Back</p>
                       </div>
                     )}
                     {emiDetails.live_photo && (
-                      <div className="space-y-2 text-center">
-                          <Image src={emiDetails.live_photo} alt="Live Photo" width={300} height={200} className="rounded-lg w-full object-contain h-40 border" data-ai-hint="person selfie" />
-                          <p className="text-sm text-muted-foreground">Live Photo</p>
+                      <div className="space-y-1 text-center">
+                          <Image src={emiDetails.live_photo} alt="Live Photo" width={150} height={100} className="rounded-md w-full object-cover h-24 border" data-ai-hint="person selfie" />
+                          <p className="text-[10px] text-muted-foreground">Live Photo</p>
                       </div>
                     )}
                 </div>
@@ -336,8 +358,8 @@ export default function CustomerDetailPage() {
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-4">
             <ActionButton
               status="locked"
-              title="Are you sure you want to Lock this device?"
-              description="This action locks the customer's device."
+              title="Confirm Device Lock"
+              description="This will instantly lock the customer's device."
               buttonText="Lock"
               variant="destructive"
               icon={Lock}
@@ -345,8 +367,8 @@ export default function CustomerDetailPage() {
             />
              <ActionButton
               status="unlocked"
-              title="Are you sure you want to Unlock this device?"
-              description="This action unlocks the customer's device."
+              title="Confirm Device Unlock"
+              description="This will instantly unlock the customer's device."
               buttonText="Unlock"
               variant="secondary"
               icon={Unlock}
@@ -354,8 +376,8 @@ export default function CustomerDetailPage() {
             />
             <ActionButton
               status="removed"
-              title="Are you sure you want to Remove this Customer?"
-              description="This action will remove the customer and release the device from control. This cannot be undone."
+              title="Confirm Customer Removal"
+              description="This will remove the customer and release the device from control. This cannot be undone."
               buttonText="Remove"
               variant="outline"
               icon={Trash2}
@@ -370,27 +392,27 @@ export default function CustomerDetailPage() {
                   disabled={isSendingReminder}
                 >
                   {isSendingReminder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BellRing className="mr-2 h-4 w-4" />}
-                  Send Reminder
+                  Reminder
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Send Payment Reminder?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will send a notification command to the target device ({emiDetails?.android_id || customer.android_id}).
+                    This will send a notification command to the target device.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction onClick={handleSendReminder}>
-                    Send Reminder
+                    Send
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
 
-            <Link href={`/customers/${id}/location`} passHref>
-              <Button variant="outline" className="w-full"><MapPin className="mr-2 h-4 w-4" />Track Location</Button>
+            <Link href={`/customers/${id}/location`} passHref className="col-span-2 lg:col-span-1">
+              <Button variant="outline" className="w-full"><MapPin className="mr-2 h-4 w-4" />Track</Button>
             </Link>
         </div>
       </div>
