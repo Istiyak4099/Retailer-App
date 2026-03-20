@@ -1,14 +1,14 @@
 
 {
   "testDpcQr": {
-    "url": "https://picsum.photos/seed/101/400/400",
+    "url": "/test-dpc-qr.png",
     "width": 400,
     "height": 400,
     "alt": "Test DPC QR Code",
     "hint": "qr code"
   },
   "lockModuleQr": {
-    "url": "https://picsum.photos/seed/102/400/400",
+    "url": "/lock-module-qr.png",
     "width": 400,
     "height": 400,
     "alt": "Lock Module QR",
