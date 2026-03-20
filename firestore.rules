@@ -10,6 +10,10 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /Retailers/{retailerId} {
+      allow read, write: if true;
+    }
+
     match /Customers/{customerId} {
       allow read, write: if true;
     }
