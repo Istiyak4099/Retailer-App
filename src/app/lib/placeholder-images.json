@@ -1,14 +1,14 @@
 
 {
   "testDpcQr": {
-    "url": "/test-dpc-qr.png",
+    "url": "/Test DPC QR.png",
     "width": 400,
     "height": 400,
     "alt": "Test DPC QR Code",
     "hint": "qr code"
   },
   "lockModuleQr": {
-    "url": "/lock-module-qr.png",
+    "url": "/Lock Module QR.png",
     "width": 400,
     "height": 400,
     "alt": "Lock Module QR",
