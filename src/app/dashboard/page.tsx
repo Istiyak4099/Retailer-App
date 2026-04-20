@@ -1,3 +1,4 @@
+
 "use client"
 
 import { AppLayout } from "@/components/app-layout";
@@ -66,7 +67,6 @@ export default function DashboardPage() {
     balance: 0,
     pending: 0,
     locked: 0,
-    unlocked: 0,
     removed: 0,
     total: 0,
   });
@@ -103,16 +103,18 @@ export default function DashboardPage() {
     const q = query(collection(db, 'Customers'));
     
     const unsubscribeCustomers = onSnapshot(q, (snapshot) => {
-      let active = 0, pending = 0, locked = 0, unlocked = 0, removed = 0, total = 0;
+      let active = 0, pending = 0, locked = 0, removed = 0, total = 0;
       
       snapshot.forEach((doc) => {
         const customer = doc.data();
         total++;
         switch(customer.status) {
-          case 'active': active++; break;
+          case 'active': 
+          case 'unlocked':
+            active++; 
+            break;
           case 'pending': pending++; break;
           case 'locked': locked++; break;
-          case 'unlocked': unlocked++; break;
           case 'removed': removed++; break;
         }
       });
@@ -136,7 +138,6 @@ export default function DashboardPage() {
           active, 
           pending, 
           locked, 
-          unlocked, 
           removed, 
           total 
         }));
@@ -183,7 +184,6 @@ export default function DashboardPage() {
     { icon: KeyRound, title: "Balance Keys", value: stats.balance, href: "/balance" },
     { icon: Hourglass, title: "Pending Devices", value: stats.pending, iconColor: "text-orange-500", href: "/customers/list?status=pending" },
     { icon: Lock, title: "Locked Devices", value: stats.locked, iconColor: "text-red-500", href: "/customers/list?status=locked" },
-    { icon: Unlock, title: "Unlocked Devices", value: stats.unlocked, iconColor: "text-green-500", href: "/customers/list?status=unlocked" },
     { icon: Trash2, title: "Removed Devices", value: stats.removed, href: "/customers/list?status=removed" },
   ];
 
@@ -197,7 +197,7 @@ export default function DashboardPage() {
                 </Badge>
             </div>
 
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                 {statCards.map((card, index) => (
                     <StatCard key={index} {...card} loading={loading} />
                 ))}

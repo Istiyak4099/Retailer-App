@@ -124,8 +124,8 @@ export default function CustomerDetailPage() {
       .then(async () => {
         setCustomer(prev => prev ? { ...prev, status: newStatus } : null);
         
-        let toastMessage = `Customer status changed to ${newStatus}.`;
         let toastTitle = "Status Updated";
+        let toastMessage = `Customer status changed to ${newStatus}.`;
         let Icon = CheckCircle2;
         let iconColor = "text-green-500";
         
@@ -134,7 +134,8 @@ export default function CustomerDetailPage() {
           toastMessage = "Command executed successfully.";
           Icon = Lock;
           iconColor = "text-red-500";
-        } else if (newStatus === 'unlocked') {
+        } else if (newStatus === 'active' && customer.status === 'locked') {
+          // If returning from locked, we treat it as an "Unlock" action
           toastTitle = "Device Unlocked";
           toastMessage = "Command executed successfully.";
           Icon = Unlock;
@@ -375,9 +376,9 @@ export default function CustomerDetailPage() {
               className="w-full h-12 text-base font-bold"
             />
              <ActionButton
-              status="unlocked"
+              status="active"
               title="Confirm Device Unlock"
-              description="This will instantly unlock the customer's device."
+              description="This will instantly unlock the customer's device and set it to active status."
               buttonText="Unlock"
               variant="secondary"
               icon={Unlock}
