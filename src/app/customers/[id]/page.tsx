@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppLayout } from "@/components/app-layout";
@@ -24,6 +25,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Calendar,
+  CheckCircle,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -31,8 +33,8 @@ import { notFound, useParams, useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { collection, doc, getDoc, getDocs, query, updateDoc, where, addDoc, serverTimestamp } from "firebase/firestore";
-import { format } from 'date-fns';
+import { collection, doc, getDoc, getDocs, query, updateDoc, where, addDoc, serverTimestamp, increment, Timestamp } from "firebase/firestore";
+import { format, addMonths, addWeeks } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -48,10 +50,13 @@ import {
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
-const InfoRow = ({ label, value }: { label: string; value: string | number | undefined | null }) => (
-  <div className="flex justify-between py-2 border-b last:border-0">
+const InfoRow = ({ label, value, action }: { label: string; value: string | number | undefined | null; action?: React.ReactNode }) => (
+  <div className="flex justify-between items-center py-2 border-b last:border-0 min-h-[44px]">
     <dt className="text-muted-foreground">{label}</dt>
-    <dd className="font-semibold text-right">{value || 'N/A'}</dd>
+    <div className="flex items-center gap-3">
+      <dd className="font-semibold text-right">{value || 'N/A'}</dd>
+      {action}
+    </div>
   </div>
 );
 
@@ -70,6 +75,7 @@ export default function CustomerDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSendingReminder, setIsSendingReminder] = useState(false);
+  const [isLoggingPayment, setIsLoggingPayment] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -219,6 +225,68 @@ export default function CustomerDetailPage() {
       });
   };
 
+  const handleLogPayment = async () => {
+    if (!emiDetails) return;
+    if (emiDetails.number_of_emi <= 0) {
+      toast({
+        variant: "destructive",
+        title: "No EMIs Left",
+        description: "This customer has already completed all payments.",
+      });
+      return;
+    }
+
+    setIsLoggingPayment(true);
+    const emiDocRef = doc(db, "EmiDetails", emiDetails.id);
+    
+    // Calculate new date
+    const currentNextDate = emiDetails.next_payment_date.toDate();
+    let nextDate;
+    if (emiDetails.emi_type === 'weekly') {
+      nextDate = addWeeks(currentNextDate, 1);
+    } else {
+      nextDate = addMonths(currentNextDate, 1);
+    }
+
+    const updateData = {
+      number_of_emi: increment(-1),
+      next_payment_date: Timestamp.fromDate(nextDate),
+    };
+
+    updateDoc(emiDocRef, updateData)
+      .then(() => {
+        setEmiDetails(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            number_of_emi: prev.number_of_emi - 1,
+            next_payment_date: Timestamp.fromDate(nextDate)
+          };
+        });
+
+        toast({
+          title: (
+            <div className="flex flex-col items-center gap-2">
+              <CheckCircle className="h-10 w-10 text-green-500" />
+              <span>Payment Logged</span>
+            </div>
+          ),
+          description: "EMI count decremented and next date advanced.",
+        });
+      })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: emiDocRef.path,
+          operation: 'update',
+          requestResourceData: updateData,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsLoggingPayment(false);
+      });
+  };
+
 
   if (loading) {
     return (
@@ -323,7 +391,22 @@ export default function CustomerDetailPage() {
               <InfoRow label="Total EMI Amount" value={emiDetails?.total_emi ? `₹${emiDetails.total_emi.toLocaleString()}` : 'N/A'} />
               <InfoRow label="EMI Type" value={emiDetails?.emi_type ? emiDetails.emi_type.charAt(0).toUpperCase() + emiDetails.emi_type.slice(1) : 'N/A'} />
               <InfoRow label="EMI Installment" value={emiDetails?.emi_monthly_amount ? `₹${emiDetails.emi_monthly_amount.toLocaleString()}` : 'N/A'} />
-              <InfoRow label="Number of EMIs" value={emiDetails?.number_of_emi} />
+              <InfoRow 
+                label="Number of EMIs" 
+                value={emiDetails?.number_of_emi} 
+                action={
+                  <Button 
+                    size="sm" 
+                    variant="secondary" 
+                    className="h-8 px-3 text-xs font-bold" 
+                    onClick={handleLogPayment}
+                    disabled={isLoggingPayment || (emiDetails?.number_of_emi || 0) <= 0}
+                  >
+                    {isLoggingPayment ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+                    Log Payment
+                  </Button>
+                }
+              />
               <InfoRow label="Date of Next Payment" value={emiDetails?.next_payment_date ? format(emiDetails.next_payment_date.toDate(), 'PPP') : 'N/A'} />
               <InfoRow label="Activation Date" value={emiDetails?.created_time ? format(emiDetails.created_time, 'PP') : 'N/A'} />
               <InfoRow label="Loan ID" value={emiDetails?.id} />
