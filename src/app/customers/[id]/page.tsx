@@ -227,7 +227,10 @@ export default function CustomerDetailPage() {
 
   const handleLogPayment = async () => {
     if (!emiDetails || !emiDetails.next_payment_date) return;
-    if (emiDetails.number_of_emi <= 0) {
+    
+    const remainingCount = emiDetails.remaining_emi ?? emiDetails.number_of_emi;
+    
+    if (remainingCount <= 0) {
       toast({
         variant: "destructive",
         title: "No EMIs Left",
@@ -236,10 +239,15 @@ export default function CustomerDetailPage() {
       return;
     }
 
+    // Show snackbar before decrementing
+    toast({
+      title: "Processing Payment",
+      description: "Updating installment records...",
+    });
+
     setIsLoggingPayment(true);
     const emiDocRef = doc(db, "EmiDetails", emiDetails.id);
     
-    // Safely get next date from Timestamp or Date
     const currentNextDate = typeof emiDetails.next_payment_date.toDate === 'function' 
       ? emiDetails.next_payment_date.toDate() 
       : new Date(emiDetails.next_payment_date);
@@ -252,7 +260,7 @@ export default function CustomerDetailPage() {
     }
 
     const updateData = {
-      number_of_emi: increment(-1),
+      remaining_emi: increment(-1),
       next_payment_date: Timestamp.fromDate(nextDate),
     };
 
@@ -260,9 +268,10 @@ export default function CustomerDetailPage() {
       .then(() => {
         setEmiDetails(prev => {
           if (!prev) return null;
+          const currentRemaining = prev.remaining_emi ?? prev.number_of_emi;
           return {
             ...prev,
-            number_of_emi: prev.number_of_emi - 1,
+            remaining_emi: currentRemaining - 1,
             next_payment_date: Timestamp.fromDate(nextDate)
           };
         });
@@ -403,12 +412,16 @@ export default function CustomerDetailPage() {
                     variant="secondary" 
                     className="h-8 px-3 text-xs font-bold" 
                     onClick={handleLogPayment}
-                    disabled={isLoggingPayment || (emiDetails?.number_of_emi || 0) <= 0}
+                    disabled={isLoggingPayment || (emiDetails?.remaining_emi ?? emiDetails?.number_of_emi ?? 0) <= 0}
                   >
                     {isLoggingPayment ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle className="h-3 w-3 mr-1" />}
                     Log Payment
                   </Button>
                 }
+              />
+              <InfoRow 
+                label="Remaining EMI" 
+                value={emiDetails?.remaining_emi ?? emiDetails?.number_of_emi} 
               />
               <InfoRow label="Date of Next Payment" value={emiDetails?.next_payment_date ? format(typeof emiDetails.next_payment_date.toDate === 'function' ? emiDetails.next_payment_date.toDate() : new Date(emiDetails.next_payment_date), 'PPP') : 'N/A'} />
               <InfoRow label="Activation Date" value={emiDetails?.created_time ? format(emiDetails.created_time, 'PP') : 'N/A'} />

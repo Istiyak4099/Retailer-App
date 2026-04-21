@@ -92,7 +92,6 @@ function NewEmiPageContent() {
   useEffect(() => {
     const [price, processing_fee, down_payment, number_of_emi] = watchedValues;
     
-    // Explicitly cast to number to ensure safe calculation
     const p = Number(price) || 0;
     const pf = Number(processing_fee) || 0;
     const dp = Number(down_payment) || 0;
@@ -173,6 +172,7 @@ function NewEmiPageContent() {
         down_payment: dp,
         emi_type: formValues.emi_type,
         number_of_emi: formValues.number_of_emi,
+        remaining_emi: formValues.number_of_emi,
         emi_monthly_amount: formValues.emi_monthly_amount,
         next_payment_date: Timestamp.fromDate(formValues.next_payment_date),
         total_emi: total_emi,
