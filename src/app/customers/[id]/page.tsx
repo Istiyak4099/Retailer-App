@@ -239,12 +239,6 @@ export default function CustomerDetailPage() {
       return;
     }
 
-    // Show snackbar before decrementing
-    toast({
-      title: "Processing Payment",
-      description: "Updating installment records...",
-    });
-
     setIsLoggingPayment(true);
     const emiDocRef = doc(db, "EmiDetails", emiDetails.id);
     
@@ -406,22 +400,39 @@ export default function CustomerDetailPage() {
               <InfoRow 
                 label="Number of EMIs" 
                 value={emiDetails?.number_of_emi} 
-                action={
-                  <Button 
-                    size="sm" 
-                    variant="secondary" 
-                    className="h-8 px-3 text-xs font-bold" 
-                    onClick={handleLogPayment}
-                    disabled={isLoggingPayment || (emiDetails?.remaining_emi ?? emiDetails?.number_of_emi ?? 0) <= 0}
-                  >
-                    {isLoggingPayment ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle className="h-3 w-3 mr-1" />}
-                    Log Payment
-                  </Button>
-                }
               />
               <InfoRow 
                 label="Remaining EMI" 
                 value={emiDetails?.remaining_emi ?? emiDetails?.number_of_emi} 
+                action={
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        size="sm" 
+                        variant="secondary" 
+                        className="h-8 px-3 text-xs font-bold" 
+                        disabled={isLoggingPayment || (emiDetails?.remaining_emi ?? emiDetails?.number_of_emi ?? 0) <= 0}
+                      >
+                        {isLoggingPayment ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+                        Log Payment
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Confirm Payment Logging</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to log a payment? This will decrement the remaining installments and advance the next due date.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleLogPayment}>
+                          Confirm Payment
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                }
               />
               <InfoRow label="Date of Next Payment" value={emiDetails?.next_payment_date ? format(typeof emiDetails.next_payment_date.toDate === 'function' ? emiDetails.next_payment_date.toDate() : new Date(emiDetails.next_payment_date), 'PPP') : 'N/A'} />
               <InfoRow label="Activation Date" value={emiDetails?.created_time ? format(emiDetails.created_time, 'PP') : 'N/A'} />
