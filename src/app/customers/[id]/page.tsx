@@ -54,7 +54,7 @@ const InfoRow = ({ label, value, action }: { label: string; value: string | numb
   <div className="flex justify-between items-center py-2 border-b last:border-0 min-h-[44px]">
     <dt className="text-muted-foreground">{label}</dt>
     <div className="flex items-center gap-3">
-      <dd className="font-semibold text-right">{value || 'N/A'}</dd>
+      <dd className="font-semibold text-right">{value !== undefined && value !== null ? value : 'N/A'}</dd>
       {action}
     </div>
   </div>
@@ -226,7 +226,7 @@ export default function CustomerDetailPage() {
   };
 
   const handleLogPayment = async () => {
-    if (!emiDetails) return;
+    if (!emiDetails || !emiDetails.next_payment_date) return;
     if (emiDetails.number_of_emi <= 0) {
       toast({
         variant: "destructive",
@@ -239,8 +239,11 @@ export default function CustomerDetailPage() {
     setIsLoggingPayment(true);
     const emiDocRef = doc(db, "EmiDetails", emiDetails.id);
     
-    // Calculate new date
-    const currentNextDate = emiDetails.next_payment_date.toDate();
+    // Safely get next date from Timestamp or Date
+    const currentNextDate = typeof emiDetails.next_payment_date.toDate === 'function' 
+      ? emiDetails.next_payment_date.toDate() 
+      : new Date(emiDetails.next_payment_date);
+
     let nextDate;
     if (emiDetails.emi_type === 'weekly') {
       nextDate = addWeeks(currentNextDate, 1);
@@ -407,7 +410,7 @@ export default function CustomerDetailPage() {
                   </Button>
                 }
               />
-              <InfoRow label="Date of Next Payment" value={emiDetails?.next_payment_date ? format(emiDetails.next_payment_date.toDate(), 'PPP') : 'N/A'} />
+              <InfoRow label="Date of Next Payment" value={emiDetails?.next_payment_date ? format(typeof emiDetails.next_payment_date.toDate === 'function' ? emiDetails.next_payment_date.toDate() : new Date(emiDetails.next_payment_date), 'PPP') : 'N/A'} />
               <InfoRow label="Activation Date" value={emiDetails?.created_time ? format(emiDetails.created_time, 'PP') : 'N/A'} />
               <InfoRow label="Loan ID" value={emiDetails?.id} />
 

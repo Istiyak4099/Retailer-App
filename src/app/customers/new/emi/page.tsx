@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -90,8 +91,15 @@ function NewEmiPageContent() {
 
   useEffect(() => {
     const [price, processing_fee, down_payment, number_of_emi] = watchedValues;
-    if (number_of_emi > 0) {
-      const calculatedAmount = (price + (processing_fee || 0) - (down_payment || 0)) / number_of_emi;
+    
+    // Explicitly cast to number to ensure safe calculation
+    const p = Number(price) || 0;
+    const pf = Number(processing_fee) || 0;
+    const dp = Number(down_payment) || 0;
+    const n = Number(number_of_emi) || 0;
+
+    if (n > 0) {
+      const calculatedAmount = (p + pf - dp) / n;
       form.setValue("emi_monthly_amount", Number(calculatedAmount.toFixed(2)));
     } else {
       form.setValue("emi_monthly_amount", 0);
@@ -139,10 +147,10 @@ function NewEmiPageContent() {
         uploadFile(formValues.live_photo)
       ]);
 
-      const price = formValues.price || 0;
-      const down_payment = formValues.down_payment || 0;
-      const processing_fee = formValues.processing_fee || 0;
-      const total_emi = price - down_payment + processing_fee;
+      const p = Number(formValues.price) || 0;
+      const dp = Number(formValues.down_payment) || 0;
+      const pf = Number(formValues.processing_fee) || 0;
+      const total_emi = p - dp + pf;
 
       const customerData = {
         full_name: searchParams.get('full_name'),
@@ -160,9 +168,9 @@ function NewEmiPageContent() {
         customerId: customerRef.id,
         product_name: formValues.product_name,
         android_id: customerData.android_id,
-        price: price,
-        processing_fee: processing_fee,
-        down_payment: down_payment,
+        price: p,
+        processing_fee: pf,
+        down_payment: dp,
         emi_type: formValues.emi_type,
         number_of_emi: formValues.number_of_emi,
         emi_monthly_amount: formValues.emi_monthly_amount,
