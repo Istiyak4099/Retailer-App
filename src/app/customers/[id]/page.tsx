@@ -391,12 +391,12 @@ export default function CustomerDetailPage() {
 
               <SectionTitle>Loan Information</SectionTitle>
               <InfoRow label="Product Name" value={emiDetails?.product_name} />
-              <InfoRow label="Product Price" value={emiDetails?.price ? `₹${emiDetails.price.toLocaleString()}`: 'N/A'} />
-              <InfoRow label="Processing Fee" value={emiDetails?.processing_fee ? `₹${emiDetails.processing_fee.toLocaleString()}` : 'N/A'} />
-              <InfoRow label="Down Payment" value={emiDetails?.down_payment ? `₹${emiDetails.down_payment.toLocaleString()}` : 'N/A'} />
-              <InfoRow label="Total EMI Amount" value={emiDetails?.total_emi ? `₹${emiDetails.total_emi.toLocaleString()}` : 'N/A'} />
+              <InfoRow label="Product Price" value={emiDetails?.price ? emiDetails.price.toLocaleString() : 'N/A'} />
+              <InfoRow label="Processing Fee" value={emiDetails?.processing_fee ? emiDetails.processing_fee.toLocaleString() : 'N/A'} />
+              <InfoRow label="Down Payment" value={emiDetails?.down_payment ? emiDetails.down_payment.toLocaleString() : 'N/A'} />
+              <InfoRow label="Total EMI Amount" value={emiDetails?.total_emi ? emiDetails.total_emi.toLocaleString() : 'N/A'} />
               <InfoRow label="EMI Type" value={emiDetails?.emi_type ? emiDetails.emi_type.charAt(0).toUpperCase() + emiDetails.emi_type.slice(1) : 'N/A'} />
-              <InfoRow label="EMI Installment" value={emiDetails?.emi_monthly_amount ? `₹${emiDetails.emi_monthly_amount.toLocaleString()}` : 'N/A'} />
+              <InfoRow label="EMI Installment" value={emiDetails?.emi_monthly_amount ? emiDetails.emi_monthly_amount.toLocaleString() : 'N/A'} />
               <InfoRow 
                 label="Number of EMIs" 
                 value={emiDetails?.number_of_emi} 
