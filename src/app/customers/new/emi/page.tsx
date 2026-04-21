@@ -17,11 +17,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CheckCircle, Loader2, AlertCircle, XCircle } from "lucide-react";
-import { useState, Suspense } from "react";
+import { CheckCircle, Loader2, XCircle, CalendarIcon } from "lucide-react";
+import { useState, Suspense, useEffect } from "react";
 import Image from "next/image";
 import { db, storage } from "@/lib/firebase";
-import { addDoc, collection, doc, getDoc, serverTimestamp, updateDoc, increment } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, serverTimestamp, updateDoc, increment, Timestamp } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -34,6 +34,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const TEST_UID = "test-retailer-123";
 
@@ -42,10 +47,14 @@ const fileSchema = z.any();
 const formSchema = z.object({
   product_name: z.string().min(2, "Product name is required"),
   price: z.coerce.number().min(1, "Price must be greater than 0"),
-  processing_fee: z.coerce.number().optional(),
-  down_payment: z.coerce.number().optional(),
+  processing_fee: z.coerce.number().optional().default(0),
+  down_payment: z.coerce.number().optional().default(0),
+  emi_type: z.enum(["weekly", "monthly"]),
   number_of_emi: z.coerce.number().int().min(1, "At least 1 EMI is required"),
-  emi_monthly_amount: z.coerce.number().min(1, "Monthly EMI is required"),
+  next_payment_date: z.date({
+    required_error: "Next payment date is required",
+  }),
+  emi_monthly_amount: z.coerce.number(),
   nid_front: fileSchema.optional(),
   nid_back: fileSchema.optional(),
   live_photo: fileSchema.optional(),
@@ -68,6 +77,7 @@ function NewEmiPageContent() {
       price: 0,
       processing_fee: 0,
       down_payment: 0,
+      emi_type: "monthly",
       number_of_emi: 6,
       emi_monthly_amount: 0,
       nid_front: undefined,
@@ -75,6 +85,18 @@ function NewEmiPageContent() {
       live_photo: undefined,
     },
   });
+
+  const watchedValues = form.watch(["price", "processing_fee", "down_payment", "number_of_emi"]);
+
+  useEffect(() => {
+    const [price, processing_fee, down_payment, number_of_emi] = watchedValues;
+    if (number_of_emi > 0) {
+      const calculatedAmount = (price + (processing_fee || 0) - (down_payment || 0)) / number_of_emi;
+      form.setValue("emi_monthly_amount", Number(calculatedAmount.toFixed(2)));
+    } else {
+      form.setValue("emi_monthly_amount", 0);
+    }
+  }, [watchedValues, form]);
 
   const uploadFile = async (fileList: FileList | undefined) => {
     if (!fileList || fileList.length === 0) return null;
@@ -95,7 +117,6 @@ function NewEmiPageContent() {
     if (!formValues) return;
     
     try {
-      // 1. Check Balance
       const balance = await checkBalance();
       if (balance <= 0) {
         toast({
@@ -112,7 +133,6 @@ function NewEmiPageContent() {
         return;
       }
 
-      // 2. Start Uploads
       const [nidFrontUrl, nidBackUrl, livePhotoUrl] = await Promise.all([
         uploadFile(formValues.nid_front),
         uploadFile(formValues.nid_back),
@@ -124,7 +144,6 @@ function NewEmiPageContent() {
       const processing_fee = formValues.processing_fee || 0;
       const total_emi = price - down_payment + processing_fee;
 
-      // 3. Create Customer
       const customerData = {
         full_name: searchParams.get('full_name'),
         mobile_number: searchParams.get('mobile_number'),
@@ -137,7 +156,6 @@ function NewEmiPageContent() {
 
       const customerRef = await addDoc(collection(db, "Customers"), customerData);
 
-      // 4. Create EMI Details
       await addDoc(collection(db, "EmiDetails"), {
         customerId: customerRef.id,
         product_name: formValues.product_name,
@@ -145,8 +163,10 @@ function NewEmiPageContent() {
         price: price,
         processing_fee: processing_fee,
         down_payment: down_payment,
+        emi_type: formValues.emi_type,
         number_of_emi: formValues.number_of_emi,
         emi_monthly_amount: formValues.emi_monthly_amount,
+        next_payment_date: Timestamp.fromDate(formValues.next_payment_date),
         total_emi: total_emi,
         nid_front: nidFrontUrl,
         nid_back: nidBackUrl,
@@ -154,7 +174,6 @@ function NewEmiPageContent() {
         created_time: serverTimestamp(),
       });
       
-      // 5. Deduct Balance
       await updateDoc(doc(db, "Retailers", TEST_UID), {
         key_balance: increment(-1)
       });
@@ -240,7 +259,8 @@ function NewEmiPageContent() {
                   )}
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <FormField
                   control={form.control}
                   name="down_payment"
@@ -254,6 +274,30 @@ function NewEmiPageContent() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="emi_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>EMI Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <FormField
                   control={form.control}
                   name="number_of_emi"
@@ -269,19 +313,65 @@ function NewEmiPageContent() {
                 />
                 <FormField
                   control={form.control}
+                  name="next_payment_date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Date of Next Payment</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) =>
+                              date < new Date(new Date().setHours(0, 0, 0, 0))
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <FormField
+                  control={form.control}
                   name="emi_monthly_amount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Monthly EMI</FormLabel>
+                      <FormLabel>Monthly EMI Amount (Calculated)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0.00" {...field} />
+                        <Input type="number" {...field} readOnly className="bg-muted font-bold" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-              <div className="space-y-4">
+
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Verification Documents</h3>
                 <FormField
                   control={form.control}
                   name="nid_front"
@@ -340,8 +430,8 @@ function NewEmiPageContent() {
                   )}
                 />
               </div>
-              <div className="flex justify-end">
-                <Button type="submit">
+              <div className="flex justify-end pt-4">
+                <Button type="submit" size="lg" className="w-full md:w-auto px-12">
                   Create EMI Plan <CheckCircle className="ml-2 h-4 w-4" />
                 </Button>
               </div>

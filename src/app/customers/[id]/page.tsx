@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppLayout } from "@/components/app-layout";
@@ -24,7 +23,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  UserMinus,
+  Calendar,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -135,7 +134,6 @@ export default function CustomerDetailPage() {
           Icon = Lock;
           iconColor = "text-red-500";
         } else if (newStatus === 'active' && customer.status === 'locked') {
-          // If returning from locked, we treat it as an "Unlock" action
           toastTitle = "Device Unlocked";
           toastMessage = "Command executed successfully.";
           Icon = Unlock;
@@ -318,14 +316,17 @@ export default function CustomerDetailPage() {
               <InfoRow label="Android ID" value={emiDetails?.android_id || customer.android_id} />
 
               <SectionTitle>Loan Information</SectionTitle>
+              <InfoRow label="Product Name" value={emiDetails?.product_name} />
               <InfoRow label="Product Price" value={emiDetails?.price ? `₹${emiDetails.price.toLocaleString()}`: 'N/A'} />
               <InfoRow label="Processing Fee" value={emiDetails?.processing_fee ? `₹${emiDetails.processing_fee.toLocaleString()}` : 'N/A'} />
               <InfoRow label="Down Payment" value={emiDetails?.down_payment ? `₹${emiDetails.down_payment.toLocaleString()}` : 'N/A'} />
-              <InfoRow label="Total EMI" value={emiDetails?.total_emi ? `₹${emiDetails.total_emi.toLocaleString()}` : 'N/A'} />
-              <InfoRow label="Monthly EMI" value={emiDetails?.emi_monthly_amount ? `₹${emiDetails.emi_monthly_amount.toLocaleString()}` : 'N/A'} />
+              <InfoRow label="Total EMI Amount" value={emiDetails?.total_emi ? `₹${emiDetails.total_emi.toLocaleString()}` : 'N/A'} />
+              <InfoRow label="EMI Type" value={emiDetails?.emi_type ? emiDetails.emi_type.charAt(0).toUpperCase() + emiDetails.emi_type.slice(1) : 'N/A'} />
+              <InfoRow label="EMI Installment" value={emiDetails?.emi_monthly_amount ? `₹${emiDetails.emi_monthly_amount.toLocaleString()}` : 'N/A'} />
               <InfoRow label="Number of EMIs" value={emiDetails?.number_of_emi} />
-              <InfoRow label="Loan ID" value={emiDetails?.id} />
+              <InfoRow label="Date of Next Payment" value={emiDetails?.next_payment_date ? format(emiDetails.next_payment_date.toDate(), 'PPP') : 'N/A'} />
               <InfoRow label="Activation Date" value={emiDetails?.created_time ? format(emiDetails.created_time, 'PP') : 'N/A'} />
+              <InfoRow label="Loan ID" value={emiDetails?.id} />
 
 
               <SectionTitle>Personal Information</SectionTitle>

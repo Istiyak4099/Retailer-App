@@ -32,6 +32,8 @@ export interface EmiDetails {
   total_emi: number;
   number_of_emi: number;
   emi_monthly_amount: number;
+  emi_type: "weekly" | "monthly";
+  next_payment_date: any; // Firestore Timestamp
   nid_front: string; // URL
   nid_back: string; // URL
   live_photo: string; // URL
