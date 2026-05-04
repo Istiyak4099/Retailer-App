@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppLayout } from "@/components/app-layout";
@@ -28,6 +27,7 @@ import {
   CheckCircle,
   MessageSquare,
   Copy,
+  Key,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -58,8 +58,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { generateOfflineUnlockResponse } from "@/app/actions/offline-unlock";
 
 const InfoRow = ({ label, value, action }: { label: string; value: string | number | undefined | null; action?: React.ReactNode }) => (
   <div className="flex justify-between items-center py-2 border-b last:border-0 min-h-[44px]">
@@ -88,6 +90,12 @@ export default function CustomerDetailPage() {
   const [isSendingReminder, setIsSendingReminder] = useState(false);
   const [isLoggingPayment, setIsLoggingPayment] = useState(false);
   const [isOfflineLockOpen, setIsOfflineLockOpen] = useState(false);
+  const [isOfflineUnlockOpen, setIsOfflineUnlockOpen] = useState(false);
+  
+  // Offline Unlock State
+  const [challenge, setChallenge] = useState("");
+  const [unlockResponse, setUnlockResponse] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -303,6 +311,33 @@ export default function CustomerDetailPage() {
       .finally(() => {
         setIsLoggingPayment(false);
       });
+  };
+
+  const handleGenerateOfflineUnlock = async () => {
+    const trimmed = challenge.trim().toUpperCase();
+    if (trimmed.length < 6 || trimmed.length > 8) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Challenge",
+        description: "Challenge must be between 6 and 8 characters.",
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const response = await generateOfflineUnlockResponse(trimmed);
+      setUnlockResponse(response);
+    } catch (error) {
+      console.error("Error generating offline unlock:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to generate response code.",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
 
@@ -583,6 +618,69 @@ export default function CustomerDetailPage() {
                     }}
                   >
                     <Copy className="mr-2 h-4 w-4" /> Copy Command
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isOfflineUnlockOpen} onOpenChange={setIsOfflineUnlockOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="w-full h-12 text-base font-bold border-green-600 text-green-600 hover:bg-green-600/10"
+                >
+                  <Key className="mr-2 h-4 w-4" />Offline Unlock Key
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Offline Unlock</DialogTitle>
+                  <DialogDescription>
+                    Enter the challenge code shown on the customer's lock screen.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Challenge Code:</p>
+                    <Input
+                      type="text"
+                      placeholder="e.g. KP7N3XMT"
+                      value={challenge}
+                      onChange={(e) => setChallenge(e.target.value.toUpperCase())}
+                      maxLength={8}
+                      className="text-center text-2xl font-mono tracking-widest h-14"
+                    />
+                  </div>
+                  
+                  <Button 
+                    className="w-full h-12 font-bold bg-green-600 hover:bg-green-700" 
+                    onClick={handleGenerateOfflineUnlock}
+                    disabled={isGenerating || challenge.trim().length < 6}
+                  >
+                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Key className="mr-2 h-4 w-4" />}
+                    Generate Response
+                  </Button>
+
+                  {unlockResponse && (
+                    <div className="mt-4 p-4 bg-green-50 rounded-lg text-center border-2 border-green-200">
+                      <p className="text-xs font-semibold text-green-600 uppercase tracking-wider">Tell this code to the customer</p>
+                      <p className="text-4xl font-mono font-bold text-green-700 tracking-[0.2em] mt-2">
+                        {unlockResponse}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full" 
+                    onClick={() => {
+                      setChallenge("");
+                      setUnlockResponse(null);
+                      setIsOfflineUnlockOpen(false);
+                    }}
+                  >
+                    Close
                   </Button>
                 </DialogFooter>
               </DialogContent>
