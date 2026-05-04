@@ -26,6 +26,8 @@ import {
   AlertCircle,
   Calendar,
   CheckCircle,
+  MessageSquare,
+  Copy,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -47,6 +49,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
@@ -76,6 +87,7 @@ export default function CustomerDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSendingReminder, setIsSendingReminder] = useState(false);
   const [isLoggingPayment, setIsLoggingPayment] = useState(false);
+  const [isOfflineLockOpen, setIsOfflineLockOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -528,6 +540,53 @@ export default function CustomerDetailPage() {
                 <MapPin className="mr-2 h-4 w-4" />Track
               </Button>
             </Link>
+
+            <Dialog open={isOfflineLockOpen} onOpenChange={setIsOfflineLockOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="w-full h-12 text-base font-bold border-orange-500 text-orange-500 hover:bg-orange-500/10"
+                >
+                  <MessageSquare className="mr-2 h-4 w-4" />Offline Lock
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Offline Lock Command</DialogTitle>
+                  <DialogDescription>
+                    Send this SMS manually to the customer's device to lock it without an internet connection.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Send SMS to:</p>
+                    <p className="text-lg font-bold p-3 bg-muted rounded-md">{customer.mobile_number}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">SMS Command:</p>
+                    <div className="relative">
+                      <p className="text-xl font-mono font-bold p-4 bg-primary/10 text-primary border-2 border-primary/20 rounded-md break-all">
+                        EMI-LOCK-S1dr4x@2026
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => {
+                      navigator.clipboard.writeText("EMI-LOCK-S1dr4x@2026");
+                      toast({
+                        title: "Command Copied",
+                        description: "The SMS command has been copied to your clipboard.",
+                      });
+                    }}
+                  >
+                    <Copy className="mr-2 h-4 w-4" /> Copy Command
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             <ActionButton
               status="removed"
