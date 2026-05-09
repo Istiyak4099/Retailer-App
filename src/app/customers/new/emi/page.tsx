@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -40,8 +39,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-
-const TEST_UID = "test-retailer-123";
+import { SessionData } from "@/lib/types";
 
 const fileSchema = z.any();
 
@@ -65,11 +63,24 @@ function NewEmiPageContent() {
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [session, setSession] = useState<SessionData | null>(null);
   const [nidFrontPreview, setNidFrontPreview] = useState<string | null>(null);
   const [nidBackPreview, setNidBackPreview] = useState<string | null>(null);
   const [livePhotoPreview, setLivePhotoPreview] = useState<string | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [formValues, setFormValues] = useState<z.infer<typeof formSchema> | null>(null);
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      const res = await fetch('/api/auth/session');
+      if (res.ok) {
+        setSession(await res.json());
+      } else {
+        router.push('/login');
+      }
+    };
+    fetchSession();
+  }, [router]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -114,14 +125,15 @@ function NewEmiPageContent() {
   };
 
   const checkBalance = async () => {
-    const userDocRef = doc(db, "Retailers", TEST_UID);
+    if (!session) return 0;
+    const userDocRef = doc(db, "Retailers", session.userId);
     const userDoc = await getDoc(userDocRef);
     if (!userDoc.exists()) return 0;
     return userDoc.data().key_balance || 0;
   };
 
   async function handleFinalSubmit() {
-    if (!formValues) return;
+    if (!formValues || !session) return;
     
     try {
       const balance = await checkBalance();
@@ -158,7 +170,7 @@ function NewEmiPageContent() {
         android_id: searchParams.get('android_id'),
         address: searchParams.get('address'),
         status: "active" as const,
-        uid: TEST_UID,
+        uid: session.userId,
       };
 
       const customerRef = await addDoc(collection(db, "Customers"), customerData);
@@ -182,7 +194,7 @@ function NewEmiPageContent() {
         created_time: serverTimestamp(),
       });
       
-      await updateDoc(doc(db, "Retailers", TEST_UID), {
+      await updateDoc(doc(db, "Retailers", session.userId), {
         key_balance: increment(-1)
       });
 

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { AppLayout } from "@/components/app-layout";
@@ -28,8 +27,6 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, Timestamp, onSnapshot, doc } from "firebase/firestore";
 import { SessionData } from "@/lib/types";
 import { useRouter } from "next/navigation";
-
-const TEST_UID = "test-retailer-123";
 
 const StatCard = ({ icon: Icon, title, value, iconColor, href, loading }: { icon: React.ElementType, title: string, value: string | number, iconColor?: string, href: string, loading?: boolean }) => (
     <Link href={href} passHref className="h-full">
@@ -83,9 +80,12 @@ export default function DashboardPage() {
       if (response.ok) {
         const data = await response.json();
         setSession(data);
+      } else {
+        router.push('/login');
       }
     } catch (error) {
       console.error('Error fetching session:', error);
+      router.push('/login');
     } finally {
       setSessionLoading(false);
     }
@@ -148,7 +148,7 @@ export default function DashboardPage() {
       setLoading(false);
     });
 
-    const unsubscribeUser = onSnapshot(doc(db, "Retailers", TEST_UID), (docSnap) => {
+    const unsubscribeUser = onSnapshot(doc(db, "Retailers", session.userId), (docSnap) => {
         if (docSnap.exists()) {
             setStats(prev => ({ ...prev, balance: docSnap.data().key_balance || 0 }));
         }

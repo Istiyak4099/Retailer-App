@@ -20,11 +20,10 @@ import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { Building, Loader2, Mail, MapPin, Phone, User as UserIcon, CreditCard } from "lucide-react";
 import { useEffect, useState } from "react";
-import { User } from "@/lib/types";
+import { SessionData } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-const TEST_UID = "test-retailer-123";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   shop_owner_name: z.string().min(2, "Owner name is required"),
@@ -46,7 +45,9 @@ const InfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label:
 );
 
 export default function OnboardingPage() {
+  const router = useRouter();
   const { toast } = useToast();
+  const [session, setSession] = useState<SessionData | null>(null);
   const [userData, setUserData] = useState<any>(null);
   const [isNewUser, setIsNewUser] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -62,48 +63,68 @@ export default function OnboardingPage() {
   });
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchSessionAndUser = async () => {
       setLoading(true);
-      const userDocRef = doc(db, "Retailers", TEST_UID);
-      const userDoc = await getDoc(userDocRef);
-      if (userDoc.exists()) {
-        const fetchedData = userDoc.data();
-        setUserData(fetchedData);
-        form.reset({
-          shop_owner_name: fetchedData.shop_owner_name || "",
-          mobile_number: fetchedData.mobile_number || "",
-          shop_name: fetchedData.shop_name || "",
-          shop_address: fetchedData.shop_address || "",
-        });
-        setIsNewUser(false);
-      } else {
-         form.reset({
-          shop_owner_name: "Test User",
-          mobile_number: "",
-          shop_name: "",
-          shop_address: ""
-        });
-        setIsNewUser(true);
+      try {
+        const response = await fetch('/api/auth/session');
+        if (response.ok) {
+          const sessionData = await response.json();
+          setSession(sessionData);
+
+          const userDocRef = doc(db, "Retailers", sessionData.userId);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            const fetchedData = userDoc.data();
+            setUserData(fetchedData);
+            form.reset({
+              shop_owner_name: fetchedData.shop_owner_name || sessionData.name || "",
+              mobile_number: fetchedData.mobile_number || sessionData.mobileNumber || "",
+              shop_name: fetchedData.shop_name || sessionData.shopName || "",
+              shop_address: fetchedData.shop_address || "",
+            });
+            setIsNewUser(false);
+          } else {
+            form.reset({
+              shop_owner_name: sessionData.name || "",
+              mobile_number: sessionData.mobileNumber || "",
+              shop_name: sessionData.shopName || "",
+              shop_address: ""
+            });
+            setIsNewUser(true);
+          }
+        } else {
+          router.push('/login');
+        }
+      } catch (error) {
+        console.error('Auth error:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-    fetchUserData();
-  }, [form]);
+    fetchSessionAndUser();
+  }, [form, router]);
 
 
   async function onSubmit(values: FormData) {
+    if (!session) return;
     try {
       const userPayload = {
         ...values,
-        email_address: "testuser@example.com",
+        email_address: userData?.email_address || "",
         key_balance: isNewUser ? 10 : userData?.key_balance || 0,
       };
 
-      await setDoc(doc(db, "Retailers", TEST_UID), userPayload, { merge: true });
+      await setDoc(doc(db, "Retailers", session.userId), userPayload, { merge: true });
       
-      const updatedUserData = await getDoc(doc(db, "Retailers", TEST_UID));
+      const updatedUserData = await getDoc(doc(db, "Retailers", session.userId));
       setUserData(updatedUserData.data());
       setIsNewUser(false);
+
+      toast({
+        title: "Profile Saved",
+        description: "Your information has been updated successfully.",
+      });
 
     } catch (error) {
       console.error("Error saving profile: ", error);
@@ -166,13 +187,6 @@ export default function OnboardingPage() {
                     )}
                     />
                 </div>
-                <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl>
-                        <Input type="email" value="testuser@example.com" disabled />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
                 <FormField
                     control={form.control}
                     name="shop_name"

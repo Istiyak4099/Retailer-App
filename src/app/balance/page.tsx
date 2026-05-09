@@ -7,37 +7,58 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { QrCode, PlusCircle, CreditCard, Loader2, CheckCircle2 } from "lucide-react";
 import { db } from "@/lib/firebase";
-import { doc, onSnapshot, updateDoc, increment, setDoc, getDoc } from "firebase/firestore";
-
-const TEST_UID = "test-retailer-123";
+import { doc, onSnapshot, updateDoc, increment, setDoc } from "firebase/firestore";
+import { SessionData } from "@/lib/types";
+import { useRouter } from "next/navigation";
 
 export default function CodeBalancePage() {
+  const router = useRouter();
+  const [session, setSession] = useState<SessionData | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    const docRef = doc(db, "Retailers", TEST_UID);
+    const fetchSession = async () => {
+      try {
+        const response = await fetch('/api/auth/session');
+        if (response.ok) {
+          const data = await response.json();
+          setSession(data);
+        } else {
+          router.push('/login');
+        }
+      } catch (error) {
+        console.error('Session error:', error);
+      }
+    };
+    fetchSession();
+  }, [router]);
+
+  useEffect(() => {
+    if (!session) return;
+    
+    const docRef = doc(db, "Retailers", session.userId);
     
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         setBalance(docSnap.data().key_balance || 0);
       } else {
-        // Initialize if doesn't exist for testing
         setBalance(0);
         setDoc(docRef, { key_balance: 0 }, { merge: true });
       }
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [session]);
 
   const handleScan = () => {
     // Silent for scanner
   };
 
   const handleAddBalance = async () => {
-      const docRef = doc(db, "Retailers", TEST_UID);
+      if (!session) return;
+      const docRef = doc(db, "Retailers", session.userId);
       await updateDoc(docRef, {
           key_balance: increment(10)
       });
