@@ -50,15 +50,25 @@ export async function POST(request: NextRequest) {
     // 3. Safely parse the response — Site A might return HTML on crash
     let data;
     try {
-      data = await response.json();
-    } catch (parseError) {
-      console.error(
-        `Site A returned non-JSON response. Status: ${response.status}, ` +
-        `URL: ${siteAUrl}/api/auth/login. ` +
-        `This usually means Site A crashed or the SITE_A_URL is wrong.`
-      );
+      const text = await response.text();
+      try {
+        data = JSON.parse(text);
+      } catch (parseError) {
+        console.error(
+          `Site A returned non-JSON response. Status: ${response.status}, ` +
+          `URL: ${siteAUrl}/api/auth/login.\n` +
+          `Response Body: ${text.substring(0, 500)}...\n` +
+          `This usually means Site A crashed or the SITE_A_URL is wrong.`
+        );
+        return NextResponse.json(
+          { error: `Authentication service returned an invalid response (Status ${response.status}). Please check Site A logs.` },
+          { status: 502 }
+        );
+      }
+    } catch (readError) {
+      console.error('Failed to read response from Site A:', readError);
       return NextResponse.json(
-        { error: 'Authentication service returned an invalid response. Please contact support.' },
+        { error: 'Authentication service returned an unreadable response.' },
         { status: 502 }
       );
     }
