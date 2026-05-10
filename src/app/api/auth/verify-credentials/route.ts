@@ -47,17 +47,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data = await response.json();
+    // 3. Safely parse the response — Site A might return HTML on crash
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      console.error(
+        `Site A returned non-JSON response. Status: ${response.status}, ` +
+        `URL: ${siteAUrl}/api/auth/login. ` +
+        `This usually means Site A crashed or the SITE_A_URL is wrong.`
+      );
+      return NextResponse.json(
+        { error: 'Authentication service returned an invalid response. Please contact support.' },
+        { status: 502 }
+      );
+    }
 
-    // 3. Handle non-200 responses from Site A
+    // 4. Handle non-200 responses from Site A
     if (!response.ok) {
+      console.warn(`Site A rejected credentials. Status: ${response.status}, Error: ${data.error || 'unknown'}`);
       return NextResponse.json(
         { error: data.error || data.message || 'Invalid credentials' },
         { status: response.status }
       );
     }
 
-    // 4. Success - Extract user data and return to client
+    // 5. Success — Extract user data and return to client
     const { userId, role } = data;
 
     return NextResponse.json(
