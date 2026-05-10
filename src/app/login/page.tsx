@@ -7,6 +7,7 @@ import { auth } from '@/lib/firebase-client';
 import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
+  signInWithCustomToken,
   ConfirmationResult,
 } from 'firebase/auth';
 import {
@@ -100,7 +101,25 @@ export default function LoginPage() {
         return;
       }
 
-      // 2. Initialize Recaptcha
+      // Bypass SMS OTP if Admin Panel provided a custom token (Spark plan support)
+      if (verifyData.firebaseToken) {
+        const result = await signInWithCustomToken(auth, verifyData.firebaseToken);
+        const idToken = await result.user.getIdToken();
+        
+        const sessionRes = await fetch('/api/auth/create-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ firebaseToken: idToken, mobileNumber }),
+        });
+
+        const sessionData = await sessionRes.json();
+        if (!sessionRes.ok) throw new Error(sessionData.error || 'Failed to create session');
+        
+        router.push('/dashboard');
+        return;
+      }
+
+      // 2. Initialize Recaptcha (Fallback if no custom token was provided)
       if (!recaptchaVerifierRef.current) {
         recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
           size: 'invisible',
