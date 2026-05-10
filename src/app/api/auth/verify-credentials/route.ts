@@ -36,6 +36,9 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(process.env.VERCEL_PROTECTION_BYPASS && {
+            'x-vercel-protection-bypass': process.env.VERCEL_PROTECTION_BYPASS
+          })
         },
         body: JSON.stringify({ mobileNumber, password }),
       });
@@ -60,6 +63,15 @@ export async function POST(request: NextRequest) {
           `Response Body: ${text.substring(0, 500)}...\n` +
           `This usually means Site A crashed or the SITE_A_URL is wrong.`
         );
+
+        // Specifically check for Vercel Authentication Protection
+        if (response.status === 401 && text.includes('Vercel authentication')) {
+          return NextResponse.json(
+            { error: 'Site A is protected by Vercel Authentication. Please disable it in the Vercel dashboard, or set VERCEL_PROTECTION_BYPASS in the Retailer App.' },
+            { status: 502 }
+          );
+        }
+
         return NextResponse.json(
           { error: `Authentication service returned an invalid response (Status ${response.status}). Please check Site A logs.` },
           { status: 502 }
