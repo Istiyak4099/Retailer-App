@@ -1,23 +1,14 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase-client';
-import {
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  signInWithCustomToken,
-  ConfirmationResult,
-} from 'firebase/auth';
 import {
   Eye,
   EyeOff,
-  ArrowLeft,
   Loader2,
   Lock,
   Phone,
-  CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,51 +21,20 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { cn } from '@/lib/utils';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function LoginPage() {
   const router = useRouter();
   
   // State management
-  const [step, setStep] = useState<1 | 2>(1);
   const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
-  const [otpCode, setOtpCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [resendCountdown, setResendCountdown] = useState(0);
-  const [canResend, setCanResend] = useState(false);
 
-  // Refs for Firebase objects
-  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
-  const confirmationResultRef = useRef<ConfirmationResult | null>(null);
-  const otpInputRef = useRef<HTMLInputElement>(null);
-
-  // Handle resend countdown logic
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (resendCountdown > 0) {
-      timer = setInterval(() => {
-        setResendCountdown((prev) => prev - 1);
-      }, 1000);
-    } else if (resendCountdown === 0 && step === 2) {
-      setCanResend(true);
-    }
-    return () => clearInterval(timer);
-  }, [resendCountdown, step]);
-
-  // Focus OTP input on step 2 mount
-  useEffect(() => {
-    if (step === 2 && otpInputRef.current) {
-      otpInputRef.current.focus();
-    }
-  }, [step]);
-
-  // Step 1: Verify credentials and send OTP
-  const handleStep1Submit = async (e: React.FormEvent) => {
+  // Unified Login Submit (OTP Terminated)
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -101,81 +61,14 @@ export default function LoginPage() {
         return;
       }
 
-      // Bypass SMS OTP if Admin Panel provided a custom token (Spark plan support)
-      if (verifyData.firebaseToken) {
-        const result = await signInWithCustomToken(auth, verifyData.firebaseToken);
-        const idToken = await result.user.getIdToken();
-        
-        const sessionRes = await fetch('/api/auth/create-session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ firebaseToken: idToken, mobileNumber }),
-        });
-
-        const sessionData = await sessionRes.json();
-        if (!sessionRes.ok) throw new Error(sessionData.error || 'Failed to create session');
-        
-        router.push('/dashboard');
-        return;
-      }
-
-      // 2. Initialize Recaptcha (Fallback if no custom token was provided)
-      if (!recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          size: 'invisible',
-        });
-      }
-
-      // 3. Send OTP via Firebase
-      const confirmation = await signInWithPhoneNumber(
-        auth,
-        mobileNumber,
-        recaptchaVerifierRef.current
-      );
-
-      confirmationResultRef.current = confirmation;
-      setStep(2);
-      setResendCountdown(30);
-      setCanResend(false);
-    } catch (err: any) {
-      console.error('Step 1 Error:', err);
-      setError(err.message || 'Failed to send OTP. Please try again.');
-      recaptchaVerifierRef.current?.clear();
-      recaptchaVerifierRef.current = null;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 2: Verify OTP and create session
-  const handleStep2Submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!otpCode || otpCode.length !== 6) {
-      setError('Please enter the 6-digit code');
-      return;
-    }
-
-    if (!confirmationResultRef.current) {
-      setError('Session expired. Please go back and try again.');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // 1. Confirm OTP with Firebase
-      const result = await confirmationResultRef.current.confirm(otpCode);
-      
-      // 2. Get Firebase ID Token
-      const firebaseToken = await result.user.getIdToken();
-
-      // 3. Create Session Cookie on Site B
+      // 2. Create Session (Bypassing Firebase Token verification for Spark Plan compatibility)
       const sessionRes = await fetch('/api/auth/create-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firebaseToken, mobileNumber }),
+        body: JSON.stringify({ 
+          mobileNumber,
+          bypassToken: true // Instruction to the backend to trust the Site A verification
+        }),
       });
 
       const sessionData = await sessionRes.json();
@@ -186,98 +79,25 @@ export default function LoginPage() {
         return;
       }
 
-      // 4. Success! Redirect to dashboard
+      // 3. Success! Redirect to dashboard
       router.push('/dashboard');
     } catch (err: any) {
-      console.error('Step 2 Error:', err);
-      setError('Invalid or expired OTP. Please try again.');
-      setOtpCode('');
+      console.error('Login Error:', err);
+      setError(err.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
-
-  // Handle Resend OTP
-  const handleResend = async () => {
-    if (!canResend) return;
-    
-    setLoading(true);
-    setError(null);
-    setSuccessMessage(null);
-
-    try {
-      const verifyRes = await fetch('/api/auth/verify-credentials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobileNumber, password }),
-      });
-
-      const verifyData = await verifyRes.json();
-      if (!verifyRes.ok) {
-        setError(verifyData.error || 'Verification failed');
-        setLoading(false);
-        return;
-      }
-
-      if (!recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          size: 'invisible',
-        });
-      }
-
-      const confirmation = await signInWithPhoneNumber(
-        auth,
-        mobileNumber,
-        recaptchaVerifierRef.current
-      );
-
-      confirmationResultRef.current = confirmation;
-      setResendCountdown(30);
-      setCanResend(false);
-      setSuccessMessage('Code resent!');
-      
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err: any) {
-      setError('Failed to resend code. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const goBack = () => {
-    setStep(1);
-    setError(null);
-    setSuccessMessage(null);
-    setOtpCode('');
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <div id="recaptcha-container" className="hidden"></div>
-      
       <Card className="w-full max-w-md shadow-xl border-t-4 border-t-primary">
         <CardHeader className="space-y-1">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Step {step} of 2
-            </span>
-            {step === 2 && (
-              <button 
-                onClick={goBack}
-                className="flex items-center text-sm text-primary hover:underline"
-              >
-                <ArrowLeft className="mr-1 h-4 w-4" />
-                Back
-              </button>
-            )}
-          </div>
-          <CardTitle className="text-2xl font-bold tracking-tight">
-            {step === 1 ? 'Welcome Back' : 'Check your phone'}
+          <CardTitle className="text-2xl font-bold tracking-tight text-center">
+            Retailer Login
           </CardTitle>
-          <CardDescription className="text-base">
-            {step === 1 
-              ? 'Enter your mobile number and password to continue.' 
-              : `A 6-digit code was sent to ${mobileNumber}`}
+          <CardDescription className="text-base text-center">
+            Enter your mobile number and password to access your dashboard.
           </CardDescription>
         </CardHeader>
 
@@ -289,108 +109,55 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          {successMessage && (
-            <Alert className="py-2 border-green-500 text-green-600 bg-green-50">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription>{successMessage}</AlertDescription>
-            </Alert>
-          )}
-
-          {step === 1 ? (
-            <form onSubmit={handleStep1Submit} className="space-y-4">
-              <div className="space-y-2">
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="tel"
-                    placeholder="+880XXXXXXXXXX"
-                    value={mobileNumber}
-                    onChange={(e) => setMobileNumber(e.target.value)}
-                    className="pl-10 h-11"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 h-11"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              <Button type="submit" className="w-full h-11 text-base" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  'Continue'
-                )}
-              </Button>
-            </form>
-          ) : (
-            <form onSubmit={handleStep2Submit} className="space-y-6">
-              <div className="flex justify-center py-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <div className="relative">
+                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  ref={otpInputRef}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder="000000"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                  className="w-full max-w-[200px] text-center text-3xl font-bold tracking-[0.5em] h-14"
+                  type="tel"
+                  placeholder="Mobile Number"
+                  value={mobileNumber}
+                  onChange={(e) => setMobileNumber(e.target.value)}
+                  className="pl-10 h-11"
                   required
                 />
               </div>
-              <div className="space-y-4">
-                <Button type="submit" className="w-full h-11 text-base" disabled={loading || otpCode.length !== 6}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    'Verify & Login'
-                  )}
-                </Button>
-                
-                <div className="text-center">
-                  {canResend ? (
-                    <button
-                      type="button"
-                      onClick={handleResend}
-                      className="text-sm font-medium text-primary hover:underline"
-                    >
-                      Resend OTP
-                    </button>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Resend in {resendCountdown}s...
-                    </p>
-                  )}
-                </div>
+            </div>
+            <div className="space-y-2">
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 h-11"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
-            </form>
-          )}
+            </div>
+            <Button type="submit" className="w-full h-11 text-base font-bold" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                'Login'
+              )}
+            </Button>
+          </form>
         </CardContent>
-        <CardFooter className="bg-muted/50 p-4 border-t flex justify-center">
-          <p className="text-xs text-center text-muted-foreground max-w-[280px]">
-            By signing in, you agree to our Terms of Service and Privacy Policy.
+        <CardFooter className="bg-muted/50 p-4 border-t flex justify-center text-center">
+          <p className="text-xs text-muted-foreground">
+            Secured Authentication • OTP Disabled for Testing
           </p>
         </CardFooter>
       </Card>

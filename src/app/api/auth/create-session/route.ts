@@ -1,58 +1,51 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, db } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
 import { SessionData } from '@/lib/types';
 
 /**
- * API route to create a secure session after successful Firebase Phone Auth.
+ * API route to create a secure session.
  * 
- * 1. Verifies the Firebase ID token.
- * 2. Matches the phone number.
- * 3. Fetches user data from Firestore "Dealers" collection.
- * 4. Sets a secure httpOnly session cookie.
+ * - Supports traditional Firebase Token verification.
+ * - Supports 'bypassToken' mode for Spark plan testing (OTP terminated).
  */
 
 export async function POST(request: NextRequest) {
   try {
-    const { firebaseToken, mobileNumber } = await request.json();
+    const { firebaseToken, mobileNumber, bypassToken } = await request.json();
 
     // 1. Validation
-    if (!firebaseToken || !mobileNumber) {
+    if (!mobileNumber) {
       return NextResponse.json(
-        { error: 'Firebase token and mobile number are required' },
+        { error: 'Mobile number is required' },
         { status: 400 }
       );
     }
 
-    // 2. Verify Firebase ID Token
-    let decodedToken;
-    try {
-      decodedToken = await adminAuth.verifyIdToken(firebaseToken);
-    } catch (error) {
-      console.error('Firebase token verification failed:', error);
-      return NextResponse.json(
-        { error: 'Invalid session token. Please try again.' },
-        { status: 401 }
-      );
+    // 2. Verify Identity (Token or Bypass)
+    if (!bypassToken) {
+        if (!firebaseToken) {
+            return NextResponse.json({ error: 'Firebase token is required' }, { status: 400 });
+        }
+        try {
+            const decodedToken = await adminAuth.verifyIdToken(firebaseToken);
+            if (decodedToken.phone_number !== mobileNumber && !decodedToken.phone_number?.endsWith(mobileNumber)) {
+                return NextResponse.json({ error: 'Token mismatch' }, { status: 401 });
+            }
+        } catch (error) {
+            console.error('Token verification failed:', error);
+            return NextResponse.json({ error: 'Invalid session token' }, { status: 401 });
+        }
     }
 
-    // 3. Cross-check phone number
-    // Firebase phone numbers are typically in E.164 format (e.g., +1234567890)
-    // We compare with the mobileNumber provided by the user.
-    if (decodedToken.phone_number !== mobileNumber && !decodedToken.phone_number?.endsWith(mobileNumber)) {
-        return NextResponse.json(
-            { error: 'Token mismatch. Please try again.' },
-            { status: 401 }
-        );
-    }
-
-    // 4. Lookup user in Firestore "Dealers" collection
+    // 3. Lookup user in Firestore "Dealers" collection
     const dealersRef = db.collection('Dealers');
     const querySnapshot = await dealersRef.where('mobileNumber', '==', mobileNumber).limit(1).get();
 
     if (querySnapshot.empty) {
       return NextResponse.json(
-        { error: 'No account found. Please contact your administrator.' },
+        { error: 'No account found for this mobile number.' },
         { status: 404 }
       );
     }
@@ -60,7 +53,7 @@ export async function POST(request: NextRequest) {
     const doc = querySnapshot.docs[0];
     const userData = doc.data();
 
-    // 5. Prepare Session Data
+    // 4. Prepare Session Data
     const sessionData: SessionData = {
       userId: doc.id,
       mobileNumber: userData.mobileNumber,
@@ -70,7 +63,7 @@ export async function POST(request: NextRequest) {
       dealerCode: userData.dealerCode,
     };
 
-    // 6. Set httpOnly session cookie
+    // 5. Set httpOnly session cookie
     const cookieStore = await cookies();
     cookieStore.set('auth_session', JSON.stringify(sessionData), {
       httpOnly: true,
@@ -80,7 +73,7 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
 
-    // 7. Success Response
+    // 6. Success Response
     return NextResponse.json(
       {
         message: 'Login successful',
