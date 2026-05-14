@@ -9,6 +9,7 @@ import { SessionData } from '@/lib/types';
  * 
  * - Supports traditional Firebase Token verification.
  * - Supports 'bypassToken' mode for Spark plan testing (OTP terminated).
+ * - UPDATED: Now queries the 'Retailers' collection and handles field name discrepancies.
  */
 
 export async function POST(request: NextRequest) {
@@ -39,9 +40,25 @@ export async function POST(request: NextRequest) {
         }
     }
 
-    // 3. Lookup user in Firestore "Dealers" collection
-    const dealersRef = db.collection('Dealers');
-    const querySnapshot = await dealersRef.where('mobileNumber', '==', mobileNumber).limit(1).get();
+    // 3. Lookup user in Firestore
+    // We check 'Retailers' as that's where profiles are saved during onboarding.
+    const retailersRef = db.collection('Retailers');
+    
+    // Normalization: Try both the provided number and the version without the '+' prefix
+    const mobileVariants = [mobileNumber, mobileNumber.replace('+', '')];
+    
+    let querySnapshot = await retailersRef.where('mobile_number', 'in', mobileVariants).limit(1).get();
+
+    // Fallback: Also check camelCase field just in case
+    if (querySnapshot.empty) {
+      querySnapshot = await retailersRef.where('mobileNumber', 'in', mobileVariants).limit(1).get();
+    }
+
+    // Secondary Fallback: Check 'Dealers' collection for backward compatibility
+    if (querySnapshot.empty) {
+      const dealersRef = db.collection('Dealers');
+      querySnapshot = await dealersRef.where('mobileNumber', 'in', mobileVariants).limit(1).get();
+    }
 
     if (querySnapshot.empty) {
       return NextResponse.json(
@@ -54,13 +71,14 @@ export async function POST(request: NextRequest) {
     const userData = doc.data();
 
     // 4. Prepare Session Data
+    // We map the fields from the DB (Retailers use shop_owner_name, etc.)
     const sessionData: SessionData = {
       userId: doc.id,
-      mobileNumber: userData.mobileNumber,
-      name: userData.name,
-      role: userData.role,
-      shopName: userData.shopName,
-      dealerCode: userData.dealerCode,
+      mobileNumber: userData.mobile_number || userData.mobileNumber || mobileNumber,
+      name: userData.shop_owner_name || userData.name || 'User',
+      role: userData.role || 'Retailer',
+      shopName: userData.shop_name || userData.shopName || '',
+      dealerCode: userData.dealer_code || userData.dealerCode || '',
     };
 
     // 5. Set httpOnly session cookie
