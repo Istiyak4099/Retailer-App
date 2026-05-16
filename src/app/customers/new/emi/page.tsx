@@ -170,7 +170,7 @@ function NewEmiPageContent() {
         android_id: searchParams.get('android_id'),
         address: searchParams.get('address'),
         status: "active" as const,
-        uid: session.userId,
+        created_by_uid: session.userId,
       };
 
       const customerRef = await addDoc(collection(db, "Customers"), customerData);

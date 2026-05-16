@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppLayout } from "@/components/app-layout";
@@ -9,18 +8,30 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, getDocs } from "firebase/firestore";
-import { Customer } from "@/lib/types";
+import { collection, query, getDocs, where } from "firebase/firestore";
+import { Customer, SessionData } from "@/lib/types";
+import { useRouter } from "next/navigation";
 
 export default function CustomersPage() {
+  const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<SessionData | null>(null);
 
   useEffect(() => {
-    const fetchCustomers = async () => {
+    const fetchSessionAndCustomers = async () => {
       setLoading(true);
       try {
-        const q = query(collection(db, "Customers"));
+        const res = await fetch('/api/auth/session');
+        if (!res.ok) {
+          router.push('/login');
+          return;
+        }
+        const sessionData = await res.json();
+        setSession(sessionData);
+
+        // Fetch only customers created by this user
+        const q = query(collection(db, "Customers"), where('created_by_uid', '==', sessionData.userId));
         const querySnapshot = await getDocs(q);
         const fetchedCustomers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
         setCustomers(fetchedCustomers);
@@ -31,8 +42,8 @@ export default function CustomersPage() {
       }
     };
 
-    fetchCustomers();
-  }, []);
+    fetchSessionAndCustomers();
+  }, [router]);
 
   return (
     <AppLayout title="Total Customers">

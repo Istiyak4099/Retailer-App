@@ -1,10 +1,9 @@
-
 "use client";
 
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { AppLayout } from "@/components/app-layout";
 import { CustomerTable } from "@/components/dashboard/customer-table";
-import { Customer } from "@/lib/types";
+import { Customer, SessionData } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Loader2, PlusCircle } from "lucide-react";
 import Link from 'next/link';
@@ -24,16 +23,27 @@ function titleCase(str: string) {
 }
 
 function CustomersListPageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const status = searchParams.get('status');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<SessionData | null>(null);
 
   useEffect(() => {
-    const fetchCustomers = async () => {
+    const fetchSessionAndCustomers = async () => {
       setLoading(true);
       try {
-        let customerQuery = query(collection(db, 'Customers'));
+        const res = await fetch('/api/auth/session');
+        if (!res.ok) {
+          router.push('/login');
+          return;
+        }
+        const sessionData = await res.json();
+        setSession(sessionData);
+
+        // Fetch customers created by this user
+        let customerQuery = query(collection(db, 'Customers'), where('created_by_uid', '==', sessionData.userId));
         
         if (status && status !== 'today') {
             customerQuery = query(customerQuery, where('status', '==', status));
@@ -54,9 +64,6 @@ function CustomersListPageContent() {
             const tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1);
 
-            // Note: Firestore 'in' filters have a limit of 30 items. 
-            // For a production app with many customers, this logic should be reversed 
-            // (query EmiDetails first, then fetch Customers).
             const emiQuery = query(
               collection(db, "EmiDetails"),
               where("customerId", "in", fetchedCustomers.map(c => c.id)),
@@ -77,8 +84,8 @@ function CustomersListPageContent() {
         setLoading(false);
       }
     };
-    fetchCustomers();
-  }, [status]);
+    fetchSessionAndCustomers();
+  }, [status, router]);
 
   let pageTitle = status ? `${titleCase(status)} Customers` : "All Customers";
   let pageDescription = status ? `A list of your customers with status: ${titleCase(status)}` : "Here's a list of all your EMI customers.";

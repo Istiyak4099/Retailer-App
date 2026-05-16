@@ -100,7 +100,8 @@ export default function DashboardPage() {
     
     setLoading(true);
 
-    const q = query(collection(db, 'Customers'));
+    // Filter customers by created_by_uid
+    const q = query(collection(db, 'Customers'), where('created_by_uid', '==', session.userId));
     
     const unsubscribeCustomers = onSnapshot(q, (snapshot) => {
       let active = 0, pending = 0, locked = 0, removed = 0, total = 0;
@@ -124,6 +125,7 @@ export default function DashboardPage() {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
+      // Fetch only today's activations created by this retailer
       const emiQuery = query(
         collection(db, "EmiDetails"),
         where("created_time", ">=", Timestamp.fromDate(today)),
@@ -131,7 +133,11 @@ export default function DashboardPage() {
       );
 
       getDocs(emiQuery).then((emiSnapshot) => {
-        const todaysActivations = emiSnapshot.size;
+        // We need to filter emiDetails by customerId that belongs to this retailer
+        // Since EmiDetails doesn't have created_by_uid, we filter based on the customers we already have
+        const retailerCustomerIds = new Set(snapshot.docs.map(d => d.id));
+        const todaysActivations = emiSnapshot.docs.filter(d => retailerCustomerIds.has(d.data().customerId)).length;
+        
         setStats(prev => ({ 
           ...prev, 
           today: todaysActivations, 

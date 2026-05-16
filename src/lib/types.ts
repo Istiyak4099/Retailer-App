@@ -1,11 +1,11 @@
 export interface User {
-  uid?: string;
-  shop_owner_name: string;
-  mobile_number: string;
-  email_address: string;
-  shop_name: string;
-  shop_address: string;
-  code_balance?: number;
+  uid: string;
+  name: string;
+  mobileNumber: string;
+  email: string;
+  shopName: string;
+  address: string;
+  key_balance?: number;
 }
 
 export interface Customer {
@@ -15,7 +15,7 @@ export interface Customer {
   email_address: string;
   android_id?: string;
   address?: string;
-  uid?: string;
+  created_by_uid: string;
   status: "active" | "locked" | "completed" | "pending" | "unlocked" | "removed";
   latitude?: number;
   longitude?: number;

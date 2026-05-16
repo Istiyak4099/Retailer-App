@@ -18,7 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { Building, Loader2, Mail, MapPin, Phone, User as UserIcon, CreditCard } from "lucide-react";
+import { Building, Loader2, Mail, MapPin, Phone, User as UserIcon, CreditCard, Hash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SessionData } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
@@ -26,10 +26,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
-  shop_owner_name: z.string().min(2, "Owner name is required"),
-  mobile_number: z.string().regex(/^\d{11}$/, "Invalid 11-digit mobile number"),
-  shop_name: z.string().min(2, "Shop name is required"),
-  shop_address: z.string().min(10, "Shop address is required"),
+  name: z.string().min(2, "Name is required"),
+  mobileNumber: z.string().regex(/^\d{11}$/, "Invalid 11-digit mobile number"),
+  shopName: z.string().min(2, "Shop name is required"),
+  address: z.string().min(10, "Address is required"),
+  email: z.string().email("Invalid email").optional().or(z.literal("")),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -39,7 +40,7 @@ const InfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label:
         <Icon className="h-5 w-5 text-primary mr-4 mt-1" />
         <div>
             <p className="text-muted-foreground text-sm">{label}</p>
-            <p className="font-semibold">{value || 'N/A'}</p>
+            <p className="font-semibold break-all">{value || 'N/A'}</p>
         </div>
     </div>
 );
@@ -55,10 +56,11 @@ export default function OnboardingPage() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      shop_owner_name: "",
-      mobile_number: "",
-      shop_name: "",
-      shop_address: "",
+      name: "",
+      mobileNumber: "",
+      shopName: "",
+      address: "",
+      email: "",
     },
   });
 
@@ -78,18 +80,20 @@ export default function OnboardingPage() {
             const fetchedData = userDoc.data();
             setUserData(fetchedData);
             form.reset({
-              shop_owner_name: fetchedData.shop_owner_name || sessionData.name || "",
-              mobile_number: fetchedData.mobile_number || sessionData.mobileNumber || "",
-              shop_name: fetchedData.shop_name || sessionData.shopName || "",
-              shop_address: fetchedData.shop_address || "",
+              name: fetchedData.name || sessionData.name || "",
+              mobileNumber: fetchedData.mobileNumber || sessionData.mobileNumber || "",
+              shopName: fetchedData.shopName || sessionData.shopName || "",
+              address: fetchedData.address || "",
+              email: fetchedData.email || "",
             });
             setIsNewUser(false);
           } else {
             form.reset({
-              shop_owner_name: sessionData.name || "",
-              mobile_number: sessionData.mobileNumber || "",
-              shop_name: sessionData.shopName || "",
-              shop_address: ""
+              name: sessionData.name || "",
+              mobileNumber: sessionData.mobileNumber || "",
+              shopName: sessionData.shopName || "",
+              address: "",
+              email: "",
             });
             setIsNewUser(true);
           }
@@ -105,13 +109,11 @@ export default function OnboardingPage() {
     fetchSessionAndUser();
   }, [form, router]);
 
-
   async function onSubmit(values: FormData) {
     if (!session) return;
     try {
       const userPayload = {
         ...values,
-        email_address: userData?.email_address || "",
         key_balance: isNewUser ? 10 : userData?.key_balance || 0,
       };
 
@@ -162,10 +164,10 @@ export default function OnboardingPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                     control={form.control}
-                    name="shop_owner_name"
+                    name="name"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Shop Owner Name</FormLabel>
+                        <FormLabel>Owner Name</FormLabel>
                         <FormControl>
                             <Input placeholder="e.g. John Doe" {...field} />
                         </FormControl>
@@ -175,7 +177,7 @@ export default function OnboardingPage() {
                     />
                     <FormField
                     control={form.control}
-                    name="mobile_number"
+                    name="mobileNumber"
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Mobile Number</FormLabel>
@@ -189,7 +191,7 @@ export default function OnboardingPage() {
                 </div>
                 <FormField
                     control={form.control}
-                    name="shop_name"
+                    name="shopName"
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Shop Name</FormLabel>
@@ -202,12 +204,25 @@ export default function OnboardingPage() {
                 />
                 <FormField
                     control={form.control}
-                    name="shop_address"
+                    name="address"
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Shop Address</FormLabel>
                         <FormControl>
                         <Input placeholder="Full shop address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Email Address</FormLabel>
+                        <FormControl>
+                        <Input placeholder="retailer@example.com" {...field} />
                         </FormControl>
                         <FormMessage />
                     </FormItem>
@@ -244,11 +259,11 @@ export default function OnboardingPage() {
             </CardHeader>
             <CardContent className="pt-0">
                 <Separator className="mb-4" />
-                <InfoRow icon={UserIcon} label="Dealer Name" value={userData?.shop_owner_name} />
+                <InfoRow icon={UserIcon} label="Name" value={userData?.name} />
                 <Separator />
-                <InfoRow icon={Phone} label="Mobile Number" value={userData?.mobile_number} />
+                <InfoRow icon={Phone} label="Mobile Number" value={userData?.mobileNumber} />
                 <Separator />
-                <InfoRow icon={Mail} label="Email Address" value={userData?.email_address} />
+                <InfoRow icon={Mail} label="Email Address" value={userData?.email} />
             </CardContent>
         </Card>
 
@@ -259,9 +274,11 @@ export default function OnboardingPage() {
             </CardHeader>
             <CardContent className="pt-0">
                  <Separator className="mb-4" />
-                <InfoRow icon={Building} label="Shop Name" value={userData?.shop_name} />
+                <InfoRow icon={Hash} label="Retailer Id" value={session?.userId} />
                 <Separator />
-                <InfoRow icon={MapPin} label="Address" value={userData?.shop_address} />
+                <InfoRow icon={Building} label="Shop Name" value={userData?.shopName} />
+                <Separator />
+                <InfoRow icon={MapPin} label="Address" value={userData?.address} />
                 <Separator />
                 <InfoRow icon={CreditCard} label="Code Balance" value={userData?.key_balance} />
             </CardContent>
